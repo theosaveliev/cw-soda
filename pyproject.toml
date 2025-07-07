@@ -1,0 +1,41 @@
+[project]
+name = "cw-soda"
+version = "0.1.10"
+description = "A CLI tool for Unix-like environments to encrypt/decrypt a CW log using NaCl"
+readme = "README.md"
+authors = [
+    { name = "Theo Saveliev", email = "89431871+theosaveliev@users.noreply.github.com" }
+]
+license = {text = "MIT"}
+requires-python = ">=3.13,<4.0"
+
+dependencies = [
+    "click>=8.2.1,<9.0.0",
+    "click-option-group>=0.5.7,<0.6.0",
+    "crc>=7.1.0,<8.0.0",
+    "pynacl>=1.5.0,<2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6,<2.0.0",
+    "black>=25.1.0,<26.0.0",
+    "isort>=6.0.1,<7.0.0",
+    "pydocstringformatter>=0.7.3,<0.8.0",
+    "pylint[spelling]>=3.3.7,<4.0.0",
+    "pytest>=8.4.1,<9.0.0",
+    "pyupgrade>=3.20.0,<4.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+soda = "cw_soda.main:cli"
+
+[tool.uv]
+add-bounds = "major"
+
+[tool.isort]
+profile = "black"
