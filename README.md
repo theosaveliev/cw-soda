@@ -7,23 +7,17 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 
 #### Features
 
-- Public Key cryptography (Curve25519-XSalsa20-Poly1305)
+- Public Key encryption (Curve25519-XSalsa20-Poly1305)
+- Secret Key encryption (XSalsa20-Poly1305)
 - Key derivation (Argon2)
 - Text compression (zlib, bz2, lzma)
 - CRC-based error correction
 - Custom Morse alphabets
 
 
-#### Installation
+## Installation
 
-1. Install uv: [Installation](https://docs.astral.sh/uv/getting-started/installation/)
-   ```
-   # Ubuntu
-   % sudo snap install astral-uv --classic
-
-   # MacOS
-   % brew install uv
-   ```
+1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 2. Install cw-soda:
    ```
    % uv tool install .
@@ -34,6 +28,31 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
    ```
 
 
+## Getting help
+
+All commands have `[-h | --help]` option:
+
+```
+% soda --help
+Usage: soda [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --version   Show the version and exit.
+  -h, --help  Show this message and exit.
+
+Commands:
+  decrypt     Decrypt the message
+  encrypt     Encrypt the message
+  find-error  Find the error
+  genkey      Generate a Private or a Secret Key
+  kdf         Derive a Private or a Secret Key
+  print       Print as table
+  pubkey      Get the Public Key
+  readkey     Read a Private or a Secret Key
+```
+
+
+## Public Key encryption
 #### Key generation
 
 ```
@@ -42,7 +61,7 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 % soda genkey | tee bob | soda pubkey - > bob_pub
 
 % cat alice
-2FDPMS0Q5SB82YN39525P2UJH1G90KB9KWR7JOYM13CEEH6W8K
+1RNSV1XN7EY6LIMRGQLM04ZSAV2I4QZITJTPJ8KEUSTZLL6XPV
 ```
 
 #### Encryption
@@ -50,26 +69,32 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 Alice sends the message to Bob:
 
 ```
-% soda encrypt alice bob_pub message > encrypted
+% cat message 
+A telegraph key is a specialized electrical switch used by a trained operator to transmit
+text messages in Morse code in a telegraphy system.
+The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
+(c) Wikipedia
+
+% soda encrypt message alice bob_pub > encrypted
 Plaintext length: 238
 Ciphertext length: 320
-Redundancy: 1.345
+Overhead: 1.345
 
 % head -c 61 encrypted
-EKDBXVYICDEJVC7EM3V4VE7HCM9OD9HRDX0DAOJ8K5Y3LHV4Z0NPDBGNW6T42
+53D9P20CSQMJ1S5VA1HRUYHRRTUF3D15810MVA8M8GSTP19FFF1XGK7VH5N8R
 
 % soda print encrypted 
 #	A    	B    	C    	D    	E    	F    	G    	
-1	EKDBX	NPDBG	FC7EX	H3URF	H3VIM	7YFLH	5NE5T	
-2	VYICD	NW6T4	37KUJ	5V457	XQETZ	QU68M	21LL7	
-3	EJVC7	2HUGY	JGK8T	LNDHY	WR3UI	RT382	BCOBQ	
-4	EM3V4	0RGN9	6HT32	IUSN5	KH0BU	4H4HJ	90XPQ	
-5	VE7HC	2BJ8F	T2SFM	ZLQL7	D1XJ7	1P683	
-6	M9OD9	BQT8C	H0CNC	EMBCJ	R76OV	16VM1	
-7	HRDX0	313GI	91JA6	TFO6N	4L9WG	J69CW	
-8	DAOJ8	3XFZU	V2K9F	MH3G4	NGVJK	52CL2	
-9	K5Y3L	EPSDT	63T5T	I1716	YZ2AQ	HY4IF	
-10	HV4Z0	5OVDT	ULRZV	ZO00M	PCCEZ	7BVCR	
+1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
+2	20CSQ	VH5N8	VLO2Z	JA2VG	NL3MR	X52QD	9M0U5	
+3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
+4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
+5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
+6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
+7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
+8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
+9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
+10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
 ```
 
 #### Decryption
@@ -77,78 +102,169 @@ EKDBXVYICDEJVC7EM3V4VE7HCM9OD9HRDX0DAOJ8K5Y3LHV4Z0NPDBGNW6T42
 Bob recieves the message from Alice:
 
 ```
-% soda decrypt bob alice_pub received
+% head -3 received 
+53D9P
+20CSQ
+MJ1S5
+
+% soda print received
+#	A    	B    	C    	D    	E    	F    	G    	
+1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
+2	20CSQ	VH5N8	VLO2Z	JA2VG	NL3MR	X52QD	9M0U5	
+3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
+4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
+5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
+6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
+7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
+8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
+9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
+10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
+
+% soda decrypt received bob alice_pub  
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
 text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
 (c) Wikipedia
 Plaintext length: 238
 Ciphertext length: 320
-Redundancy: 1.345
-
-% head -3 received 
-EKDBX
-VYICD
-EJVC7
-
-% soda print received 
-#	A    	B    	C    	D    	E    	F    	G    	
-1	EKDBX	NPDBG	FC7EX	H3URF	H3VIM	7YFLH	5NE5T	
-2	VYICD	NW6T4	37KUJ	5V457	XQETZ	QU68M	21LL7	
-3	EJVC7	2HUGY	JGK8T	LNDHY	WR3UI	RT382	BCOBQ	
-4	EM3V4	0RGN9	6HT32	IUSN5	KH0BU	4H4HJ	90XPQ	
-5	VE7HC	2BJ8F	T2SFM	ZLQL7	D1XJ7	1P683	
-6	M9OD9	BQT8C	H0CNC	EMBCJ	R76OV	16VM1	
-7	HRDX0	313GI	91JA6	TFO6N	4L9WG	J69CW	
-8	DAOJ8	3XFZU	V2K9F	MH3G4	NGVJK	52CL2	
-9	K5Y3L	EPSDT	63T5T	I1716	YZ2AQ	HY4IF	
-10	HV4Z0	5OVDT	ULRZV	ZO00M	PCCEZ	7BVCR	
+Overhead: 1.345
 ```
 
-#### Error correction
+
+## Secret Key encryption
+
+The encryption commands accept the `--symmetric` flag:
+
+```
+% soda genkey --symmetric | tee secret
+4B6OC480WUKTVUK0RW7M4MKI7AH1BBJGPAIBLVO4XH9ZWLHJSC
+
+% soda encrypt message secret --symmetric > encrypted
+Plaintext length: 238
+Ciphertext length: 320
+Overhead: 1.345
+
+% head -c 61 encrypted
+2CEPJZL66UWKLLWHYB90PKMUAD80KOZ2JCZZ5P61AXSXUZXU67S1M4VG8DP7W
+
+% soda decrypt encrypted secret --symmetric
+A telegraph key is a specialized electrical switch used by a trained operator to transmit
+text messages in Morse code in a telegraphy system.
+The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
+(c) Wikipedia
+Plaintext length: 238
+Ciphertext length: 320
+Overhead: 1.345
+```
+
+
+## Key derivation
+
+The KDF function derives a Private or a Secret Key from the password and salt. \
+The salt will be generated if omitted.
+It can be provided as an arbitrary string, 
+in which case you might want to add the `--hash` flag to hash the input.
+
+```
+% echo qwerty > password
+% soda kdf password | tee private
+Salt: 4IO9S8KNP0HEA3XF7DWULSPVO
+5XWXPUA8GDRH0088FUP1OYOIKNIBJBWCXXRRLC7Q89NJOM34KJ
+
+% echo 12345 > salt
+% soda kdf password salt --hash | tee private
+Salt: 3AIK26Z5MZ294C6SN7WV21X
+8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
+
+% echo 3AIK26Z5MZ294C6SN7WV21X | soda kdf password - | tee private
+Salt: 3AIK26Z5MZ294C6SN7WV21X
+8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
+
+% soda kdf password --symmetric | tee secret
+Salt: F4VJY0A6DYVF4TBR0ZM44BCWA
+2BLRBM6BND8B5M3QJSMVMB4WMJGQJ8181FQL2B1J8MXANKGQZM
+```
+
+
+## Text compression
+
+That works as follows:
+1. The plaintext is compressed with the compression lib
+2. The 16-byte MAC and 24-byte nonce are added
+3. The result is encoded with Base36, which adds ~36% overhead
+
+Aside from the default `--zlib`, there are more compression options. \
+For a short message, the `--uncompressed` option provides smaller output.
+For a long text, the `--bz2` showed the best results. \
+Overall, encrypting a letter into 1.345 letters is a working solution.
+
+```
+% soda encrypt message alice bob_pub --zlib > encrypted
+Plaintext length: 238
+Ciphertext length: 320
+Overhead: 1.345
+
+% soda encrypt message alice bob_pub --bz2 > encrypted
+Plaintext length: 238
+Ciphertext length: 381
+Overhead: 1.601
+
+% soda encrypt message alice bob_pub --lzma > encrypted
+Plaintext length: 238
+Ciphertext length: 372
+Overhead: 1.563
+
+% soda encrypt message alice bob_pub --uncompressed > encrypted
+Plaintext length: 238
+Ciphertext length: 431
+Overhead: 1.811
+```
+
+
+## Error correction
 
 Alice and Bob communicate the checksums to compare the files: 
 
 <pre>
-% soda find-error received
-Checksum: 60
+% soda find-error received 
+Checksum: 80
 Is it correct? [y/n]: n
-Checksum: 6F
+Checksum: A0
 Is it correct? [y/n]: y
-Checksum: A3
+Checksum: EC
 Is it correct? [y/n]: n
-Checksum: E2
+Checksum: 93
+Is it correct? [y/n]: y
+Checksum: 16
+Is it correct? [y/n]: n
+Checksum: B9
+Is it correct? [y/n]: y
+Checksum: 6A
+Is it correct? [y/n]: n
+Checksum: A4
+Is it correct? [y/n]: y
+Checksum: 62
+Is it correct? [y/n]: n
+Checksum: D0
 Is it correct? [y/n]: y
 Checksum: F
 Is it correct? [y/n]: n
-Checksum: 75
-Is it correct? [y/n]: y
-Checksum: F7
-Is it correct? [y/n]: n
-Checksum: 4B
-Is it correct? [y/n]: y
-Checksum: 40
-Is it correct? [y/n]: n
-Checksum: 55
-Is it correct? [y/n]: y
-Checksum: 57
-Is it correct? [y/n]: n
-The error is in: 5VV57
+The error is in: JA2VG
 #	A    	B    	C    	D    	E    	F    	G    	
-1	EKDBX	NPDBG	FC7EX	H3URF	H3VIM	7YFLH	5NE5T	
-2	VYICD	NW6T4	37KUJ	<b><ins>5VV57</ins></b>	XQETZ	QU68M	21LL7	
-3	EJVC7	2HUGY	JGK8T	LNDHY	WR3UI	RT382	BCOBQ	
-4	EM3V4	0RGN9	6HT32	IUSN5	KH0BU	4H4HJ	90XPQ	
-5	VE7HC	2BJ8F	T2SFM	ZLQL7	D1XJ7	1P683	
-6	M9OD9	BQT8C	H0CNC	EMBCJ	R76OV	16VM1	
-7	HRDX0	313GI	91JA6	TFO6N	4L9WG	J69CW	
-8	DAOJ8	3XFZU	V2K9F	MH3G4	NGVJK	52CL2	
-9	K5Y3L	EPSDT	63T5T	I1716	YZ2AQ	HY4IF	
-10	HV4Z0	5OVDT	ULRZV	ZO00M	PCCEZ	7BVCR	
+1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
+2	20CSQ	VH5N8	VLO2Z	<b><ins>JA2VG</ins></b>	NL3MR	X52QD	9M0U5	
+3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
+4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
+5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
+6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
+7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
+8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
+9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
+10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
 </pre>
 
 
-#### Using a custom Morse alphabet
+## Using a custom Morse alphabet
 
 Most of the commands accept the `--baseXX` flag. The encoding must be consistent across all inputs. \
 You can convert the keys with `readkey`:
@@ -157,65 +273,37 @@ You can convert the keys with `readkey`:
 % soda readkey --in-base36 --out-base26 alice > alice_b26
 % soda readkey --in-base36 --out-base26 alice_pub > alice_pub_b26
 % cat alice alice_b26 
-2FDPMS0Q5SB82YN39525P2UJH1G90KB9KWR7JOYM13CEEH6W8K
-BSSICITKSLKFHZXWTDFMEXAAIJNOJEZSLPGXGYJAXTBDTENSMIJIEWY
+1RNSV1XN7EY6LIMRGQLM04ZSAV2I4QZITJTPJ8KEUSTZLL6XPV
+BGOUUIJGCIWGEQKBRVRAFRKAQSLJVPFUTNLOYCPNXXJQAKGKDHNIRUX
 
 % soda genkey --base26 | tee claire | soda pubkey --base26 - > claire_pub
-% soda encrypt --base26 alice_b26 claire_pub message > encrypted
+% soda encrypt message alice_b26 claire_pub --base26 > encrypted 
 Plaintext length: 238
 Ciphertext length: 352
-Redundancy: 1.479
+Overhead: 1.479
+
+% soda genkey -h
+Usage: soda genkey [OPTIONS]
+
+  Generate a Private or a Secret Key
+
+Options:
+  Encoding: [mutually_exclusive]
+    --base10
+    --base16
+    --base26
+    --base31
+    --base36                      (default)
+    --base41
+    --base64
+  --symmetric
+  -h, --help                      Show this message and exit.
 ```
 
 
-#### Key derivation
+## Applications
 
-The salt will be generated if omitted:
-
-```
-% soda kdf password > key
-Salt: 81I086JO5LTH5E5EHOBHH2Z84
-
-% soda kdf password salt
-4NG87G0U9P0J4OM55Z8CPF9FIWGZRNVAIMR7YETDD8TE8O3CUZ
-```
-
-
-#### Compression
-
-That works as follows:
-1. The plaintext is compressed with the archiver, which adds the dictionary
-2. The 16-byte MAC and 24-byte nonce are added
-3. The result is encoded with Base36, which adds ~36% overhead
- 
-Aside from the default `--zlib`, there are more compression options. \
-For a short message, the `--uncompressed` option provides smaller output. 
-For a long text, the `--bz2` showed the best results. \
-Overall, encrypting a letter into 1.345 letters is a working solution.
-
-```
-% soda encrypt alice bob_pub message --zlib > encrypted
-Plaintext length: 238
-Ciphertext length: 320
-Redundancy: 1.345
-% soda encrypt alice bob_pub message --bz2 > encrypted
-Plaintext length: 238
-Ciphertext length: 381
-Redundancy: 1.601
-% soda encrypt alice bob_pub message --lzma > encrypted
-Plaintext length: 238
-Ciphertext length: 372
-Redundancy: 1.563
-% soda encrypt alice bob_pub message --uncompressed > encrypted
-Plaintext length: 238
-Ciphertext length: 431
-Redundancy: 1.811
-```
-
-
-#### Applications
-
-The project can come in handy beyond the telegraphy system. \
+The project may come in handy beyond the telegraphy system. \
 For example, I printed a backup of my Google credentials. 
 Here comes a fake version of the backup:
 
@@ -248,27 +336,3 @@ That was printed as follows:
 
 In this scenario, I lose all of my electronic devices simultaneously. \
 That is plausible because I was robbed in Georgia, so the risk exists. 
-
-
-#### Getting help
-
-All commands have `[-h | --help]` option:
-
-```
-% soda --help
-Usage: soda [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  --version   Show the version and exit.
-  -h, --help  Show this message and exit.
-
-Commands:
-  decrypt     Decrypt message
-  encrypt     Encrypt message
-  find-error  Find error
-  genkey      Generate Private Key
-  kdf         Derive key
-  print       Print CW table
-  pubkey      Get Public Key
-  readkey     Read key
-```

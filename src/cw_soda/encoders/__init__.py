@@ -5,13 +5,14 @@ from .base26_encoder import Base26Encoder
 from .base31_encoder import Base31Encoder
 from .base36_encoder import Base36Encoder
 from .base41_encoder import Base41Encoder
-from .functions import decode_bytes, encode_key, encode_str
+from .functions import decode_bytes, encode_data, encode_key, encode_str
 
 __all__ = [
     "encoders",
     "encode_str",
     "decode_bytes",
     "encode_key",
+    "encode_data",
     "Base10Encoder",
     "Base16Encoder",
     "Base26Encoder",

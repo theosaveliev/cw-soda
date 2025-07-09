@@ -156,3 +156,16 @@ def apply_column_height_option(func):
 
 
 soda_options.column_height = apply_column_height_option
+
+
+def apply_hash_salt_option(func):
+    func = click.option(
+        "--hash",
+        "hash_salt_opt",
+        is_flag=True,
+        help="Hash the salt",
+    )(func)
+    return func
+
+
+soda_options.hash_salt_opt = apply_hash_salt_option

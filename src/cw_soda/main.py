@@ -4,13 +4,14 @@ import click
 from nacl.public import PrivateKey
 
 from cw_soda.archivers import archivers, unarchivers
-from cw_soda.cryptography.public import decrypt, encrypt, kdf
-from cw_soda.cryptography.utils import align_salt, generate_salt
-from cw_soda.encoders import decode_bytes, encode_key, encode_str, encoders
+from cw_soda.cryptography import public, secret
+from cw_soda.encoders import decode_bytes, encode_data, encode_key, encode_str, encoders
 from cw_soda.error_search import checksum_calculators, error_search
 from cw_soda.format_table import format_table
 from cw_soda.io_utils import (
+    get_salt,
     init_keypair,
+    print_salt,
     print_stats,
     read_bytes,
     read_groups,
@@ -28,15 +29,20 @@ def cli():
     pass
 
 
-@click.command(help="Generate Private Key")
+@click.command(help="Generate a Private or a Secret Key")
 @soda_options.encoding
-def genkey_cmd(encoding: str):
+@click.option("--symmetric", is_flag=True)
+def genkey_cmd(encoding: str, symmetric: bool):
     enc = encoders[encoding]
-    key = encode_key(PrivateKey.generate(), enc)
+    if symmetric:
+        key = encode_data(secret.generate_key(), enc)
+    else:
+        key = encode_key(PrivateKey.generate(), enc)
+
     click.echo(key)
 
 
-@click.command(help="Get Public Key")
+@click.command(help="Get the Public Key")
 @click.argument("private_key_file", type=file_arg)
 @soda_options.encoding
 def pubkey_cmd(private_key_file: TextIO, encoding: str):
@@ -47,93 +53,117 @@ def pubkey_cmd(private_key_file: TextIO, encoding: str):
     click.echo(pub)
 
 
-@click.command(help="Read key")
+@click.command(help="Read a Private or a Secret Key")
 @click.argument("key_file", type=file_arg)
 @soda_options.in_encoding
 @soda_options.out_encoding
-def readkey_cmd(key_file: TextIO, in_encoding: str, out_encoding: str):
+@click.option("--symmetric", is_flag=True)
+def readkey_cmd(key_file: TextIO, in_encoding: str, out_encoding: str, symmetric: bool):
     in_enc = encoders[in_encoding]
     out_enc = encoders[out_encoding]
-    pk = read_bytes(key_file)
-    pk = PrivateKey(pk, in_enc)
-    pk = encode_key(pk, out_enc)
-    click.echo(pk)
+    key = read_bytes(key_file)
+    if symmetric:
+        key = in_enc.decode(key)
+        key = encode_data(key, out_enc)
+    else:
+        key = PrivateKey(key, in_enc)
+        key = encode_key(key, out_enc)
+
+    click.echo(key)
 
 
-@click.command(help="Derive key")
+@click.command(help="Derive a Private or a Secret Key")
 @click.argument("password_file", type=file_arg)
 @click.argument("salt_file", type=file_arg, required=False)
 @soda_options.encoding
-def kdf_cmd(password_file: TextIO, salt_file: TextIO, encoding: str):
+@soda_options.hash_salt_opt
+@click.option("--symmetric", is_flag=True)
+def kdf_cmd(
+    password_file: TextIO,
+    salt_file: TextIO,
+    encoding: str,
+    hash_salt_opt: bool,
+    symmetric: bool,
+):
     enc = encoders[encoding]
     password = read_bytes(password_file)
-    if salt_file is not None:
-        salt = read_bytes(salt_file)
-        salt = enc.decode(salt)
-        salt = align_salt(salt)
+    salt = get_salt(salt_file, enc, hash_salt_opt)
+    print_salt(salt, enc)
+    if symmetric:
+        key = secret.kdf(password, salt, enc)
     else:
-        salt = generate_salt()
-        salt_out = enc.encode(salt)
-        salt_out = decode_bytes(salt_out)
-        click.echo(f"Salt: {salt_out}", err=True)
+        key = public.kdf(password, salt, enc)
 
-    key = kdf(password, salt, enc)
     key = decode_bytes(key)
     click.echo(key)
 
 
-@click.command(help="Encrypt message")
-@click.argument("private_key_file", type=file_arg)
-@click.argument("public_key_file", type=file_arg)
+@click.command(help="Encrypt the message")
 @click.argument("message_file", type=file_arg)
+@click.argument("private_or_secret_key_file", type=file_arg)
+@click.argument("public_key_file", type=file_arg, required=False)
 @soda_options.encoding
 @soda_options.compression
+@click.option("--symmetric", is_flag=True)
 def encrypt_cmd(
-    private_key_file: TextIO,
-    public_key_file: TextIO,
     message_file: TextIO,
+    private_or_secret_key_file: TextIO,
+    public_key_file: TextIO,
     encoding: str,
     compression: str,
+    symmetric: bool,
 ):
     enc = encoders[encoding]
-    priv, pub = init_keypair(private_key_file, public_key_file, enc)
     compress = archivers[compression]
     data_orig = read_str(message_file)
     data = encode_str(data_orig)
     data = compress(data)
-    encrypted = encrypt(priv, pub, data, enc)
+    if symmetric:
+        key = read_bytes(private_or_secret_key_file)
+        encrypted = secret.encrypt(key, data, enc)
+    else:
+        priv, pub = init_keypair(private_or_secret_key_file, public_key_file, enc)
+        encrypted = public.encrypt(priv, pub, data, enc)
+
     encrypted = decode_bytes(encrypted)
     click.echo(encrypted)
     print_stats(data_orig, encrypted)
 
 
-@click.command(help="Decrypt message")
-@click.argument("private_key_file", type=file_arg)
-@click.argument("public_key_file", type=file_arg)
+@click.command(help="Decrypt the message")
 @click.argument("message_file", type=file_arg)
+@click.argument("private_or_secret_key_file", type=file_arg)
+@click.argument("public_key_file", type=file_arg, required=False)
 @soda_options.encoding
 @soda_options.compression
+@click.option("--symmetric", is_flag=True)
 def decrypt_cmd(
-    private_key_file: TextIO,
-    public_key_file: TextIO,
     message_file: TextIO,
+    private_or_secret_key_file: TextIO,
+    public_key_file: TextIO,
     encoding: str,
     compression: str,
+    symmetric: bool,
 ):
     enc = encoders[encoding]
-    priv, pub = init_keypair(private_key_file, public_key_file, enc)
     decompress = unarchivers[compression]
     data = read_str(message_file)
     data_orig = remove_whitespace(data)
     data = encode_str(data_orig)
-    plain = decrypt(priv, pub, data, enc)
+    if symmetric:
+        key = read_bytes(private_or_secret_key_file)
+        plain = secret.decrypt(key, data, enc)
+    else:
+        priv, pub = init_keypair(private_or_secret_key_file, public_key_file, enc)
+        plain = public.decrypt(priv, pub, data, enc)
+
     plain = decompress(plain)
     plain = decode_bytes(plain)
     click.echo(plain)
     print_stats(plain, data_orig)
 
 
-@click.command(help="Print CW table")
+@click.command(help="Print as table")
 @click.argument("ciphertext_file", type=file_arg)
 @soda_options.output_format
 @soda_options.column_height
@@ -144,7 +174,7 @@ def print_cmd(ciphertext_file: TextIO, output_format: str, column_height: int):
     click.echo(table)
 
 
-@click.command(help="Find error")
+@click.command(help="Find the error")
 @click.argument("ciphertext_file", type=file_arg)
 @soda_options.checksum
 @soda_options.output_format

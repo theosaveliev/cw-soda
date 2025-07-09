@@ -1,148 +1,253 @@
+# pylint: disable=redefined-outer-name
 import pytest
 from click.testing import CliRunner
 
+from cw_soda.encoders import encoders
 from cw_soda.main import cli
 
 
 @pytest.fixture
-def keypair():
-    return {
-        "private_b36": "1Z8JMO1NZRZ7WD9ZTFJK2WVW0D8KHJDNKNJTNV3GVAVVZZSNJC",
-        "private_b64": "T2Tsu+ojEAGzkKz4pCsFGuZ+RYVMZleVJskIl8tshSg=",
-        "public_b36": "2SFZ0329VK0KXU9DIXVR9ZSOO94HWUOMG99A3YNN654VSW5ANN",
-    }
-
-
-@pytest.fixture
 def password():
+    """Random password."""
     return "qwerty"
 
 
 @pytest.fixture
-def encrypted_password_b36():
+def salt():
+    """Random salt and it's hash."""
+    return {"plain": "12345", "hash": "3AIK26Z5MZ294C6SN7WV21X"}
+
+
+@pytest.fixture
+def key():
+    """The key derived from the password and salt, and the corresponding public key."""
     return {
-        "uncompressed": "ZRGGHXJ2CCPV0SQG3T5S381CT1GSOL87LNHSZ9720HCP9O2MO847TAZX6W2ZR0"
-                        "56XR6CVNW",
-        "zlib": "3OU4KNC2FSW5P8TW8Z6U3MRP3M1YSVSB84BPAEBCT16AUFJWYRDEZWM1UK9V7T03PL0M9Y"
-                "7D5GBEZ129FIKE",
-        "bz2": "LJ3C94N8OON8VEL2C2MMCTMO7PFH4TNP8GZ4ZF9T2M34X6CPQMMZ9QM0PNO666CZF6J0SM3"
-               "BH63FCOSKN615BR5KXUFMRHLQJMQVLEBSFZL9W3NKK7WR2XVKX0ID7KA",
-        "lzma": "9PEEL2MYUSOXVD3FZWSTEQ6J9OKOSJY2QH6DD6RI9BP8WN3I9I3XJ1TMK1ZB5XK05IDRJC"
-                "FTC16XQJPFXQFZ4BUJ2GWEL27GCO5OFHS6R05",
+        "private36": "8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP",
+        "private64": "CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=",
+        "public36": "MXRJI9V1X0J83N4UCOYLJ091F1KOS9XOEGCKIG7KPXTVZUQRQ",
+        "secret36": "8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP",
+        "secret64": "CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=",
     }
 
 
 @pytest.fixture
-def salt_b36():
-    return "8F9ZOOMKH6SCW1HRB7WDS84KZ"
+def encrypted_public():
+    """The password encrypted with the Public module."""
+    return {
+        "uncompressed": "1BELDG5XZ7GDBS48H5NATGAXPUOITZR0X48RNGV2UALN7JLC88NOCQSQJPMV94"
+        "AB41G4HCIM",
+        "zlib": "4CAXMJM3ULPX7BCR8O20M3G9GFNZBPBYRKDQK4NM6PWGRLPDCIFBLHXBFGLRGCZIP19MDN"
+        "PJMC2V3RK8KIHX",
+        "bz2": "MDUC9F8RZNC2XCIXE67T5OPSXGGYU8A8DGJ2ANC0BJ990KR09FS73T1PVX8HICH6R8SIHOS"
+        "9SG1TVJG7Q31KZRFI3NAT3MFNGBHPDCVW4XFA97N695YQTCT0NSBDQGG",
+        "lzma": "AP1OLWB5YKYI6K6YY3G13KGCU28OEXRXZP251VIYQVLAVFGHXGPK30E1XBWUGRQZWK1HCY"
+        "2MU8B1K5AD3DDTGQCI8SI43F5T2EQGHE867V5",
+    }
+
+
+@pytest.fixture
+def encrypted_secret():
+    """The password encrypted with the Secret module."""
+    return {
+        "uncompressed": "54N2ZP3PH56LVV2K2GLW6AK7PALBZ1VDHP7DXPRHM061WVA1K8HOAY3T4ELX6L"
+        "671L0KOM2",
+        "zlib": "2K1KJYMVCAOCAKS3PGVYV4B1HO7SV67GQQTSWXGZNNTTYBSHDVZKABQAGZXHKY9UNA99PI"
+        "3YEE7UK57MZJU5",
+        "bz2": "BSQWS8YN19MENEL9TQ5160NYOH9M6G1SVSM69OYJAD9M5FL9CS0Q4RTOECSFDYJ8RU74LTA"
+        "R1UQX5OW108IF123PSGNFXWG3U7PDKRC3KIX51T9DEVLPPZ38TNSGVKT",
+        "lzma": "3VZ5BFBAAFXVCC34HL2E9B881JQYIDDY3T4A2ZF1T5BJ0UWS9UHALSW2COAOJL0RCJE63U"
+        "ZI5DOQAB0HCAHAJ846CTKZ17MH7E2KTIZ3ITA",
+    }
 
 
 def test_genkey():
     runner = CliRunner()
-    encodings = [
-        "--base10",
-        "--base16",
-        "--base26",
-        "--base31",
-        "--base36",
-        "--base41",
-        "--base64",
-    ]
-    for enc in encodings:
+    for key in encoders:
+        enc = f"--{key}"
         result = runner.invoke(cli, ["genkey", enc])
         assert result.exit_code == 0
         assert len(result.stdout) > 40
 
+        result = runner.invoke(cli, ["genkey", enc, "--symmetric"])
+        assert result.exit_code == 0
+        assert len(result.stdout) > 40
 
-def test_pubkey(keypair):
+
+def test_pubkey(key):
     runner = CliRunner()
     args = ["pubkey", "-", "--base36"]
-    result = runner.invoke(cli, args=args, input=keypair["private_b36"])
+    result = runner.invoke(cli, args=args, input=key["private36"])
     assert result.exit_code == 0
-    assert result.stdout == keypair["public_b36"] + "\n"
+    assert result.stdout == key["public36"] + "\n"
 
 
-def test_readkey(keypair):
+def test_readkey(key):
     runner = CliRunner()
     args = ["readkey", "-", "--in-base36", "--out-base64"]
-    result = runner.invoke(cli, args=args, input=keypair["private_b36"])
+    result = runner.invoke(cli, args=args, input=key["private36"])
     assert result.exit_code == 0
-    assert result.stdout == keypair["private_b64"] + "\n"
+    assert result.stdout == key["private64"] + "\n"
+
+    args = ["readkey", "-", "--in-base36", "--out-base64", "--symmetric"]
+    result = runner.invoke(cli, args=args, input=key["secret36"])
+    assert result.exit_code == 0
+    assert result.stdout == key["secret64"] + "\n"
 
 
-def test_kdf(password, salt_b36, keypair):
+def test_kdf(password, salt, key):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with open("password_file", "w", encoding="utf-8") as fd:
+        with open("password", "w", encoding="utf-8") as fd:
             fd.write(password)
 
-        args = ["kdf", "password_file", "-", "--base36"]
-        result = runner.invoke(cli, args=args, input=salt_b36)
+        with open("salt_plain", "w", encoding="utf-8") as fd:
+            fd.write(salt["plain"])
+
+        with open("salt_hash", "w", encoding="utf-8") as fd:
+            fd.write(salt["hash"])
+
+        args = ["kdf", "password", "salt_hash", "--base36"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
-        assert result.stdout == keypair["private_b36"] + "\n"
+        assert result.stdout == key["private36"] + "\n"
 
-
-def test_decrypt(keypair, password, encrypted_password_b36):
-    runner = CliRunner()
-    pw = encrypted_password_b36
-    with runner.isolated_filesystem():
-        with open("priv_file", "w", encoding="utf-8") as fd:
-            fd.write(keypair["private_b36"])
-
-        with open("pub_file", "w", encoding="utf-8") as fd:
-            fd.write(keypair["public_b36"])
-
-        args = ["decrypt", "priv_file", "pub_file", "-", "--base36", "--uncompressed"]
-        result = runner.invoke(cli, args=args, input=pw["uncompressed"])
+        args = ["kdf", "password", "salt_hash", "--base36", "--symmetric"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
-        assert result.stdout == password + "\n"
+        assert result.stdout == key["secret36"] + "\n"
 
-        args = ["decrypt", "priv_file", "pub_file", "-", "--base36", "--zlib"]
-        result = runner.invoke(cli, args=args, input=pw["zlib"])
+        args = ["kdf", "password", "salt_plain", "--base36", "--hash"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
-        assert result.stdout == password + "\n"
+        assert result.stdout == key["private36"] + "\n"
 
-        args = ["decrypt", "priv_file", "pub_file", "-", "--base36", "--bz2"]
-        result = runner.invoke(cli, args=args, input=pw["bz2"])
+        args = ["kdf", "password", "salt_plain", "--base36", "--hash", "--symmetric"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
-        assert result.stdout == password + "\n"
-
-        args = ["decrypt", "priv_file", "pub_file", "-", "--base36", "--lzma"]
-        result = runner.invoke(cli, args=args, input=pw["lzma"])
-        assert result.exit_code == 0
-        assert result.stdout == password + "\n"
+        assert result.stdout == key["secret36"] + "\n"
 
 
-def test_encrypt(keypair, password):
+def test_decrypt(password, key, encrypted_public, encrypted_secret):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with open("priv_file", "w", encoding="utf-8") as fd:
-            fd.write(keypair["private_b36"])
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
 
-        with open("pub_file", "w", encoding="utf-8") as fd:
-            fd.write(keypair["public_b36"])
+        with open("public", "w", encoding="utf-8") as fd:
+            fd.write(key["public36"])
 
-        args = ["encrypt", "priv_file", "pub_file", "-", "--base36", "--uncompressed"]
-        result = runner.invoke(cli, args=args, input=password)
+        with open("secret", "w", encoding="utf-8") as fd:
+            fd.write(key["secret36"])
+
+        args = ["decrypt", "-", "private", "public", "--base36", "--uncompressed"]
+        result = runner.invoke(cli, args=args, input=encrypted_public["uncompressed"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "private", "public", "--base36", "--zlib"]
+        result = runner.invoke(cli, args=args, input=encrypted_public["zlib"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "private", "public", "--base36", "--bz2"]
+        result = runner.invoke(cli, args=args, input=encrypted_public["bz2"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "private", "public", "--base36", "--lzma"]
+        result = runner.invoke(cli, args=args, input=encrypted_public["lzma"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "secret", "--base36", "--uncompressed", "--symmetric"]
+        result = runner.invoke(cli, args=args, input=encrypted_secret["uncompressed"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "secret", "--base36", "--zlib", "--symmetric"]
+        result = runner.invoke(cli, args=args, input=encrypted_secret["zlib"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "secret", "--base36", "--bz2", "--symmetric"]
+        result = runner.invoke(cli, args=args, input=encrypted_secret["bz2"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["decrypt", "-", "secret", "--base36", "--lzma", "--symmetric"]
+        result = runner.invoke(cli, args=args, input=encrypted_secret["lzma"])
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+
+def test_encrypt(password, key):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
+
+        with open("public", "w", encoding="utf-8") as fd:
+            fd.write(key["public36"])
+
+        with open("secret", "w", encoding="utf-8") as fd:
+            fd.write(key["secret36"])
+
+        with open("message", "w", encoding="utf-8") as fd:
+            fd.write(password)
+
+        args = ["encrypt", "message", "private", "public", "--base36", "--uncompressed"]
+        result = runner.invoke(cli, args=args)
         encrypted = result.stdout
         assert result.exit_code == 0
 
-        args = ["decrypt", "priv_file", "pub_file", "-", "--base36", "--uncompressed"]
+        args = ["decrypt", "-", "private", "public", "--base36", "--uncompressed"]
         result = runner.invoke(cli, args=args, input=encrypted)
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["encrypt", "priv_file", "pub_file", "-", "--base36", "--zlib"]
-        result = runner.invoke(cli, args=args, input=password)
+        args = [
+            "encrypt",
+            "message",
+            "secret",
+            "--base36",
+            "--uncompressed",
+            "--symmetric",
+        ]
+        result = runner.invoke(cli, args=args)
+        encrypted = result.stdout
+        assert result.exit_code == 0
+
+        args = ["decrypt", "-", "secret", "--base36", "--uncompressed", "--symmetric"]
+        result = runner.invoke(cli, args=args, input=encrypted)
+        assert result.exit_code == 0
+        assert result.stdout == password + "\n"
+
+        args = ["encrypt", "message", "private", "public", "--base36", "--zlib"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60
 
-        args = ["encrypt", "priv_file", "pub_file", "-", "--base36", "--bz2"]
-        result = runner.invoke(cli, args=args, input=password)
+        args = ["encrypt", "message", "private", "public", "--base36", "--bz2"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60
 
-        args = ["encrypt", "priv_file", "pub_file", "-", "--base36", "--lzma"]
-        result = runner.invoke(cli, args=args, input=password)
+        args = ["encrypt", "message", "private", "public", "--base36", "--lzma"]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+        assert len(result.stdout) > 60
+
+        args = ["encrypt", "message", "secret", "--base36", "--zlib", "--symmetric"]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+        assert len(result.stdout) > 60
+
+        args = ["encrypt", "message", "secret", "--base36", "--bz2", "--symmetric"]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+        assert len(result.stdout) > 60
+
+        args = ["encrypt", "message", "secret", "--base36", "--lzma", "--symmetric"]
+        result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60

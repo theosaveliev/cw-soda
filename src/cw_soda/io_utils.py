@@ -5,15 +5,18 @@ import click
 from nacl.encoding import Encoder
 from nacl.public import PrivateKey, PublicKey
 
-from cw_soda.encoders import encode_str
+from cw_soda.cryptography.utils import align_salt, generate_salt, hash_salt
+from cw_soda.encoders import encode_data, encode_str
 
 __all__ = [
     "read_str",
     "read_bytes",
     "read_groups",
-    "print_stats",
     "remove_whitespace",
     "init_keypair",
+    "get_salt",
+    "print_stats",
+    "print_salt",
 ]
 
 
@@ -49,8 +52,25 @@ def init_keypair(private_key: TextIO, public_key: TextIO, encoder: Encoder):
     return priv, pub
 
 
+def get_salt(salt_file: TextIO | None, encoder: Encoder, use_hash: bool) -> bytes:
+    if salt_file is None:
+        return generate_salt()
+
+    salt = read_bytes(salt_file)
+    if use_hash:
+        return hash_salt(salt)
+
+    salt_raw = encoder.decode(salt)
+    return align_salt(salt_raw)
+
+
 def print_stats(plain: str, cipher: str):
     click.echo(f"Plaintext length: {len(plain)}", err=True)
     click.echo(f"Ciphertext length: {len(cipher)}", err=True)
-    redun = len(cipher) / len(plain)
-    click.echo(f"Redundancy: {redun:.3f}", err=True)
+    overhead = len(cipher) / len(plain)
+    click.echo(f"Overhead: {overhead:.3f}", err=True)
+
+
+def print_salt(salt: bytes, encoder: Encoder):
+    out = encode_data(salt, encoder)
+    click.echo(f"Salt: {out}", err=True)
