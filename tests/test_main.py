@@ -25,8 +25,6 @@ def key():
         "private36": "8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP",
         "private64": "CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=",
         "public36": "MXRJI9V1X0J83N4UCOYLJ091F1KOS9XOEGCKIG7KPXTVZUQRQ",
-        "secret36": "8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP",
-        "secret64": "CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=",
     }
 
 
@@ -51,12 +49,6 @@ def encrypted_secret():
     return {
         "uncompressed": "54N2ZP3PH56LVV2K2GLW6AK7PALBZ1VDHP7DXPRHM061WVA1K8HOAY3T4ELX6L"
         "671L0KOM2",
-        "zlib": "2K1KJYMVCAOCAKS3PGVYV4B1HO7SV67GQQTSWXGZNNTTYBSHDVZKABQAGZXHKY9UNA99PI"
-        "3YEE7UK57MZJU5",
-        "bz2": "BSQWS8YN19MENEL9TQ5160NYOH9M6G1SVSM69OYJAD9M5FL9CS0Q4RTOECSFDYJ8RU74LTA"
-        "R1UQX5OW108IF123PSGNFXWG3U7PDKRC3KIX51T9DEVLPPZ38TNSGVKT",
-        "lzma": "3VZ5BFBAAFXVCC34HL2E9B881JQYIDDY3T4A2ZF1T5BJ0UWS9UHALSW2COAOJL0RCJE63U"
-        "ZI5DOQAB0HCAHAJ846CTKZ17MH7E2KTIZ3ITA",
     }
 
 
@@ -66,11 +58,7 @@ def test_genkey():
         enc = f"--{key}"
         result = runner.invoke(cli, ["genkey", enc])
         assert result.exit_code == 0
-        assert len(result.stdout) > 40
-
-        result = runner.invoke(cli, ["genkey", enc, "--symmetric"])
-        assert result.exit_code == 0
-        assert len(result.stdout) > 40
+        assert len(result.stdout) > 30
 
 
 def test_pubkey(key):
@@ -81,17 +69,12 @@ def test_pubkey(key):
     assert result.stdout == key["public36"] + "\n"
 
 
-def test_readkey(key):
+def test_encode(key):
     runner = CliRunner()
-    args = ["readkey", "-", "--in-base36", "--out-base64"]
+    args = ["encode", "-", "--in-base36", "--out-base64"]
     result = runner.invoke(cli, args=args, input=key["private36"])
     assert result.exit_code == 0
     assert result.stdout == key["private64"] + "\n"
-
-    args = ["readkey", "-", "--in-base36", "--out-base64", "--symmetric"]
-    result = runner.invoke(cli, args=args, input=key["secret36"])
-    assert result.exit_code == 0
-    assert result.stdout == key["secret64"] + "\n"
 
 
 def test_kdf(password, salt, key):
@@ -106,25 +89,15 @@ def test_kdf(password, salt, key):
         with open("salt_hash", "w", encoding="utf-8") as fd:
             fd.write(salt["hash"])
 
-        args = ["kdf", "password", "salt_hash", "--base36"]
+        args = ["kdf", "password", "salt_plain", "--base36"]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == key["private36"] + "\n"
 
-        args = ["kdf", "password", "salt_hash", "--base36", "--symmetric"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert result.stdout == key["secret36"] + "\n"
-
-        args = ["kdf", "password", "salt_plain", "--base36", "--hash"]
+        args = ["kdf", "password", "salt_hash", "--base36", "--raw-salt"]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == key["private36"] + "\n"
-
-        args = ["kdf", "password", "salt_plain", "--base36", "--hash", "--symmetric"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert result.stdout == key["secret36"] + "\n"
 
 
 def test_decrypt(password, key, encrypted_public, encrypted_secret):
@@ -135,9 +108,6 @@ def test_decrypt(password, key, encrypted_public, encrypted_secret):
 
         with open("public", "w", encoding="utf-8") as fd:
             fd.write(key["public36"])
-
-        with open("secret", "w", encoding="utf-8") as fd:
-            fd.write(key["secret36"])
 
         args = ["decrypt", "-", "private", "public", "--base36", "--uncompressed"]
         result = runner.invoke(cli, args=args, input=encrypted_public["uncompressed"])
@@ -159,23 +129,8 @@ def test_decrypt(password, key, encrypted_public, encrypted_secret):
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["decrypt", "-", "secret", "--base36", "--uncompressed", "--symmetric"]
+        args = ["decrypt", "-", "private", "--base36", "--uncompressed"]
         result = runner.invoke(cli, args=args, input=encrypted_secret["uncompressed"])
-        assert result.exit_code == 0
-        assert result.stdout == password + "\n"
-
-        args = ["decrypt", "-", "secret", "--base36", "--zlib", "--symmetric"]
-        result = runner.invoke(cli, args=args, input=encrypted_secret["zlib"])
-        assert result.exit_code == 0
-        assert result.stdout == password + "\n"
-
-        args = ["decrypt", "-", "secret", "--base36", "--bz2", "--symmetric"]
-        result = runner.invoke(cli, args=args, input=encrypted_secret["bz2"])
-        assert result.exit_code == 0
-        assert result.stdout == password + "\n"
-
-        args = ["decrypt", "-", "secret", "--base36", "--lzma", "--symmetric"]
-        result = runner.invoke(cli, args=args, input=encrypted_secret["lzma"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
@@ -188,9 +143,6 @@ def test_encrypt(password, key):
 
         with open("public", "w", encoding="utf-8") as fd:
             fd.write(key["public36"])
-
-        with open("secret", "w", encoding="utf-8") as fd:
-            fd.write(key["secret36"])
 
         with open("message", "w", encoding="utf-8") as fd:
             fd.write(password)
@@ -205,19 +157,12 @@ def test_encrypt(password, key):
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = [
-            "encrypt",
-            "message",
-            "secret",
-            "--base36",
-            "--uncompressed",
-            "--symmetric",
-        ]
+        args = ["encrypt", "message", "private", "--base36", "--uncompressed"]
         result = runner.invoke(cli, args=args)
         encrypted = result.stdout
         assert result.exit_code == 0
 
-        args = ["decrypt", "-", "secret", "--base36", "--uncompressed", "--symmetric"]
+        args = ["decrypt", "-", "private", "--base36", "--uncompressed"]
         result = runner.invoke(cli, args=args, input=encrypted)
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
@@ -233,21 +178,6 @@ def test_encrypt(password, key):
         assert len(result.stdout) > 60
 
         args = ["encrypt", "message", "private", "public", "--base36", "--lzma"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert len(result.stdout) > 60
-
-        args = ["encrypt", "message", "secret", "--base36", "--zlib", "--symmetric"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert len(result.stdout) > 60
-
-        args = ["encrypt", "message", "secret", "--base36", "--bz2", "--symmetric"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert len(result.stdout) > 60
-
-        args = ["encrypt", "message", "secret", "--base36", "--lzma", "--symmetric"]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60

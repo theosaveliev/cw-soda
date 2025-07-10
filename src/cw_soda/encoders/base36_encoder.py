@@ -1,10 +1,12 @@
+import string
+
 from nacl.encoding import Encoder
 
 from .functions import base_to_bytes, bytes_to_base, decode_bytes, encode_str
 
 __all__ = ["Base36Encoder", "ALPHABET"]
 
-ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ALPHABET = string.digits + string.ascii_uppercase
 
 
 class Base36Encoder(Encoder):

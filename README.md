@@ -30,7 +30,7 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 
 ## Getting help
 
-All commands have `[-h | --help]` option:
+All commands have `--help` option:
 
 ```
 % soda --help
@@ -41,14 +41,14 @@ Options:
   -h, --help  Show this message and exit.
 
 Commands:
-  decrypt     Decrypt the message
-  encrypt     Encrypt the message
-  find-error  Find the error
-  genkey      Generate a Private or a Secret Key
-  kdf         Derive a Private or a Secret Key
-  print       Print as table
-  pubkey      Get the Public Key
-  readkey     Read a Private or a Secret Key
+  decrypt     Decrypt message
+  encode      Encode file
+  encrypt     Encrypt message
+  find-error  Find error
+  genkey      Generate Private Key
+  kdf         Derive Private Key
+  print       Print table
+  pubkey      Get Public Key
 ```
 
 
@@ -61,7 +61,7 @@ Commands:
 % soda genkey | tee bob | soda pubkey - > bob_pub
 
 % cat alice
-1RNSV1XN7EY6LIMRGQLM04ZSAV2I4QZITJTPJ8KEUSTZLL6XPV
+65AV4JO2P750P52WHSMZIQEM09483SZCACZIO9V2ALBBNI2GFQ
 ```
 
 #### Encryption
@@ -81,20 +81,20 @@ Ciphertext length: 320
 Overhead: 1.345
 
 % head -c 61 encrypted
-53D9P20CSQMJ1S5VA1HRUYHRRTUF3D15810MVA8M8GSTP19FFF1XGK7VH5N8R
+E83LSBHQIL8EDX1JZP07GYH4UQMRCP03QKPN2ASH59SO7HHNDSK51ZK4FDKPK
 
 % soda print encrypted 
 #	A    	B    	C    	D    	E    	F    	G    	
-1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
-2	20CSQ	VH5N8	VLO2Z	JA2VG	NL3MR	X52QD	9M0U5	
-3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
-4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
-5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
-6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
-7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
-8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
-9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
-10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
+1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
+2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
+3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
+4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
+5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
+6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
+7	03QKP	I4W9R	Y3D5N	1FNA7	O6PIB	WJ3JL	
+8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
+9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
+10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
 ```
 
 #### Decryption
@@ -103,22 +103,22 @@ Bob recieves the message from Alice:
 
 ```
 % head -3 received 
-53D9P
-20CSQ
-MJ1S5
+E83LS
+BHQIL
+8EDX1
 
 % soda print received
 #	A    	B    	C    	D    	E    	F    	G    	
-1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
-2	20CSQ	VH5N8	VLO2Z	JA2VG	NL3MR	X52QD	9M0U5	
-3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
-4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
-5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
-6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
-7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
-8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
-9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
-10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
+1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
+2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
+3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
+4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
+5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
+6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
+7	03QKP	I4W9R	Y3D5N	1FNA7	O6PIB	WJ3JL	
+8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
+9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
+10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268
 
 % soda decrypt received bob alice_pub  
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
@@ -133,56 +133,48 @@ Overhead: 1.345
 
 ## Secret Key encryption
 
-The encryption commands accept the `--symmetric` flag:
+Alice and Bob share a key for symmetric encryption:
 
 ```
-% soda genkey --symmetric | tee secret
-4B6OC480WUKTVUK0RW7M4MKI7AH1BBJGPAIBLVO4XH9ZWLHJSC
+% soda genkey > shared
 
-% soda encrypt message secret --symmetric > encrypted
+% soda encrypt message shared > encrypted
 Plaintext length: 238
-Ciphertext length: 320
-Overhead: 1.345
+Ciphertext length: 321
+Overhead: 1.349
 
-% head -c 61 encrypted
-2CEPJZL66UWKLLWHYB90PKMUAD80KOZ2JCZZ5P61AXSXUZXU67S1M4VG8DP7W
-
-% soda decrypt encrypted secret --symmetric
+% soda decrypt encrypted shared
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
 text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
 (c) Wikipedia
 Plaintext length: 238
-Ciphertext length: 320
-Overhead: 1.345
+Ciphertext length: 321
+Overhead: 1.349
 ```
 
 
 ## Key derivation
 
-The KDF function derives a Private or a Secret Key from the password and salt. \
-The salt will be generated if omitted.
-It can be provided as an arbitrary string, 
-in which case you might want to add the `--hash` flag to hash the input.
+The KDF function derives the key from the password and salt. \
+The salt will be generated if omitted. \
+The salt is hashed by default, which can be disabled by passing `--raw-salt`
 
 ```
 % echo qwerty > password
-% soda kdf password | tee private
-Salt: 4IO9S8KNP0HEA3XF7DWULSPVO
-5XWXPUA8GDRH0088FUP1OYOIKNIBJBWCXXRRLC7Q89NJOM34KJ
+% soda kdf password
+Salt: 9RTY9ESH7RK4GUMX6DINC43O1
+3SY5V8E1M4ZX2A5YIYH3R6Q0DQ8QPT6WIADAGO36UFTBFZYWDZ
 
 % echo 12345 > salt
-% soda kdf password salt --hash | tee private
+% soda kdf password salt
 Salt: 3AIK26Z5MZ294C6SN7WV21X
 8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
 
-% echo 3AIK26Z5MZ294C6SN7WV21X | soda kdf password - | tee private
+% echo 3AIK26Z5MZ294C6SN7WV21X > salt
+% soda kdf password salt --raw-salt
 Salt: 3AIK26Z5MZ294C6SN7WV21X
 8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
-
-% soda kdf password --symmetric | tee secret
-Salt: F4VJY0A6DYVF4TBR0ZM44BCWA
-2BLRBM6BND8B5M3QJSMVMB4WMJGQJ8181FQL2B1J8MXANKGQZM
 ```
 
 
@@ -226,66 +218,87 @@ Overhead: 1.811
 Alice and Bob communicate the checksums to compare the files: 
 
 <pre>
-% soda find-error received 
-Checksum: 80
+% soda find-error encrypted 
+Checksum: F8
 Is it correct? [y/n]: n
-Checksum: A0
+Checksum: 58
 Is it correct? [y/n]: y
-Checksum: EC
+Checksum: C9
 Is it correct? [y/n]: n
-Checksum: 93
-Is it correct? [y/n]: y
-Checksum: 16
+Checksum: 66
 Is it correct? [y/n]: n
-Checksum: B9
-Is it correct? [y/n]: y
-Checksum: 6A
+Checksum: BC
 Is it correct? [y/n]: n
-Checksum: A4
-Is it correct? [y/n]: y
-Checksum: 62
+Checksum: 94
 Is it correct? [y/n]: n
-Checksum: D0
-Is it correct? [y/n]: y
-Checksum: F
+Checksum: 8D
 Is it correct? [y/n]: n
-The error is in: JA2VG
+The error is in: I4W9R
 #	A    	B    	C    	D    	E    	F    	G    	
-1	53D9P	1XGK7	FWYUF	7UWY2	EC7V3	30K04	5C59X	
-2	20CSQ	VH5N8	VLO2Z	<b><ins>JA2VG</ins></b>	NL3MR	X52QD	9M0U5	
-3	MJ1S5	RF292	HN80W	TPWM8	M5C61	USEBK	F1BM4	
-4	VA1HR	YQFGM	09PVJ	Q8R2U	4WYK0	860YH	035UD	
-5	UYHRR	MWTBZ	RYV57	JJTQF	NDB1J	Q7DHY	
-6	TUF3D	NZU58	20ERX	71TGC	1ST62	C8D0E	
-7	15810	Y4EIM	ZD01N	1PF7W	RIQFR	AC4UG	
-8	MVA8M	6I5EN	KTU89	NQB63	5YHSM	55A51	
-9	8GSTP	NU71Q	6NNUP	R8A4G	AH1UC	ORVCB	
-10	19FFF	GG8WT	UE28K	DY151	DFJPR	O7C6Q	
+1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
+2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
+3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
+4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
+5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
+6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
+7	03QKP	<b><ins>I4W9R</ins></b>	Y3D5N	1FNA7	O6PIB	WJ3JL	
+8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
+9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
+10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
+
+% soda find-error received
+Checksum: 36
+Is it correct? [y/n]: n
+Checksum: 58
+Is it correct? [y/n]: y
+Checksum: 7
+Is it correct? [y/n]: n
+Checksum: 15
+Is it correct? [y/n]: n
+Checksum: 9A
+Is it correct? [y/n]: n
+Checksum: 71
+Is it correct? [y/n]: n
+Checksum: F4
+Is it correct? [y/n]: n
+The error is in: IVW9R
+#	A    	B    	C    	D    	E    	F    	G    	
+1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
+2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
+3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
+4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
+5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
+6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
+7	03QKP	<b><ins>IVW9R</ins></b>	Y3D5N	1FNA7	O6PIB	WJ3JL	
+8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
+9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
+10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
 </pre>
 
 
 ## Using a custom Morse alphabet
 
-Most of the commands accept the `--baseXX` flag. The encoding must be consistent across all inputs. \
-You can convert the keys with `readkey`:
+The cw-soda supports various encodings (alphabets), which can be set with the `--baseXX` flag. \
+The encoding must be consistent across all inputs. \
+You can convert the keys with `encode`:
 
 ```
-% soda readkey --in-base36 --out-base26 alice > alice_b26
-% soda readkey --in-base36 --out-base26 alice_pub > alice_pub_b26
-% cat alice alice_b26 
-1RNSV1XN7EY6LIMRGQLM04ZSAV2I4QZITJTPJ8KEUSTZLL6XPV
-BGOUUIJGCIWGEQKBRVRAFRKAQSLJVPFUTNLOYCPNXXJQAKGKDHNIRUX
+% soda encode alice --out-base26 > alice26
+% soda encode alice_pub --out-base26 > alice_pub26
+% cat alice alice26 
+65AV4JO2P750P52WHSMZIQEM09483SZCACZIO9V2ALBBNI2GFQ
+EJFRSZGDBILRUARMXRIVBXLQODRFKEOFFGDVJVZIFECDGHSMIVDSAZM
 
 % soda genkey --base26 | tee claire | soda pubkey --base26 - > claire_pub
-% soda encrypt message alice_b26 claire_pub --base26 > encrypted 
+% soda encrypt message alice26 claire_pub --base26 > encrypted 
 Plaintext length: 238
-Ciphertext length: 352
-Overhead: 1.479
+Ciphertext length: 353
+Overhead: 1.483
 
 % soda genkey -h
 Usage: soda genkey [OPTIONS]
 
-  Generate a Private or a Secret Key
+  Generate Private Key
 
 Options:
   Encoding: [mutually_exclusive]
@@ -296,7 +309,7 @@ Options:
     --base36                      (default)
     --base41
     --base64
-  --symmetric
+    --base94
   -h, --help                      Show this message and exit.
 ```
 
@@ -336,3 +349,14 @@ That was printed as follows:
 
 In this scenario, I lose all of my electronic devices simultaneously. \
 That is plausible because I was robbed in Georgia, so the risk exists. 
+
+
+Another usage is a password source:
+
+```
+% echo 'A quote from a book or a poem.' > quote
+% echo 'google.com' > website
+% soda kdf quote website --base94
+Salt: "SNx=<L1;<.B#]QWEx3u
+"!p$u{e%_8Fe;)a\sg-!O1KD<ptKV@booBHuwKXs
+```

@@ -6,6 +6,7 @@ from cw_soda.encoders import (
     Base36Encoder,
     Base41Encoder,
     Base64Encoder,
+    Base94Encoder,
 )
 
 
@@ -32,3 +33,6 @@ def test_encoders():
 
     assert Base64Encoder.encode(b"\x64") == b"ZA=="
     assert Base64Encoder.decode(b"ZA==") == b"\x64"
+
+    assert Base94Encoder.encode(b"\x64") == b"\"'"
+    assert Base94Encoder.decode(b"\"'") == b"\x64"

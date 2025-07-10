@@ -1,6 +1,4 @@
-from nacl.encoding import Encodable, Encoder
-
-__all__ = ["encode_str", "decode_bytes", "encode_key", "encode_data"]
+__all__ = ["base_to_bytes", "bytes_to_base", "encode_str", "decode_bytes"]
 
 
 def encode_str(data: str) -> bytes:
@@ -9,14 +7,6 @@ def encode_str(data: str) -> bytes:
 
 def decode_bytes(data: bytes) -> str:
     return data.decode(encoding="utf-8", errors="strict")
-
-
-def encode_key(key: Encodable, encoder: Encoder) -> str:
-    return decode_bytes(key.encode(encoder))
-
-
-def encode_data(data: bytes, encoder: Encoder) -> str:
-    return decode_bytes(encoder.encode(data))
 
 
 def int_to_base(number: int, alphabet: str) -> str:

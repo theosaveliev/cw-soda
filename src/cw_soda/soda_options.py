@@ -15,6 +15,7 @@ option = optgroup.option
 
 
 def apply_encoding_options(func):
+    func = option("--base94", "encoding", is_flag=True, flag_value="base94")(func)
     func = option("--base64", "encoding", is_flag=True, flag_value="base64")(func)
     func = option("--base41", "encoding", is_flag=True, flag_value="base41")(func)
     func = option(
@@ -37,6 +38,7 @@ soda_options.encoding = apply_encoding_options
 
 
 def apply_in_encoding_options(func):
+    func = option("--in-base94", "in_encoding", is_flag=True, flag_value="base94")(func)
     func = option("--in-base64", "in_encoding", is_flag=True, flag_value="base64")(func)
     func = option("--in-base41", "in_encoding", is_flag=True, flag_value="base41")(func)
     func = option(
@@ -59,6 +61,9 @@ soda_options.in_encoding = apply_in_encoding_options
 
 
 def apply_out_encoding_options(func):
+    func = option("--out-base94", "out_encoding", is_flag=True, flag_value="base94")(
+        func
+    )
     func = option("--out-base64", "out_encoding", is_flag=True, flag_value="base64")(
         func
     )
@@ -130,6 +135,16 @@ def apply_output_format_options(func):
 soda_options.output_format = apply_output_format_options
 
 
+def apply_column_height_option(func):
+    func = click.option("--column-height", type=int, default=10, help="default=10")(
+        func
+    )
+    return func
+
+
+soda_options.column_height = apply_column_height_option
+
+
 def apply_checksum_options(func):
     func = option("--crc32", "checksum", is_flag=True, flag_value="crc32")(func)
     func = option("--crc16", "checksum", is_flag=True, flag_value="crc16")(func)
@@ -148,24 +163,13 @@ def apply_checksum_options(func):
 soda_options.checksum = apply_checksum_options
 
 
-def apply_column_height_option(func):
-    func = click.option("--column-height", type=int, default=10, help="default=10")(
-        func
-    )
-    return func
-
-
-soda_options.column_height = apply_column_height_option
-
-
-def apply_hash_salt_option(func):
+def apply_raw_salt_option(func):
     func = click.option(
-        "--hash",
-        "hash_salt_opt",
+        "--raw-salt",
         is_flag=True,
-        help="Hash the salt",
+        help="Decode the salt as bytes",
     )(func)
     return func
 
 
-soda_options.hash_salt_opt = apply_hash_salt_option
+soda_options.raw_salt = apply_raw_salt_option

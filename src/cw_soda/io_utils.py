@@ -6,7 +6,7 @@ from nacl.encoding import Encoder
 from nacl.public import PrivateKey, PublicKey
 
 from cw_soda.cryptography.utils import align_salt, generate_salt, hash_salt
-from cw_soda.encoders import encode_data, encode_str
+from cw_soda.encoders import decode_bytes, encode_str
 
 __all__ = [
     "read_str",
@@ -38,7 +38,7 @@ def break_into_groups(data: str) -> list:
 
 
 def read_groups(buff: TextIO) -> list:
-    """Reads the input as 5-letter groups for CW."""
+    """Reads the input as 5-letter groups."""
     text = read_str(buff)
     text = remove_whitespace(text)
     return break_into_groups(text)
@@ -52,16 +52,16 @@ def init_keypair(private_key: TextIO, public_key: TextIO, encoder: Encoder):
     return priv, pub
 
 
-def get_salt(salt_file: TextIO | None, encoder: Encoder, use_hash: bool) -> bytes:
-    if salt_file is None:
+def get_salt(file: TextIO | None, decode: bool, encoder: Encoder) -> bytes:
+    if file is None:
         return generate_salt()
 
-    salt = read_bytes(salt_file)
-    if use_hash:
-        return hash_salt(salt)
+    salt = read_bytes(file)
+    if decode:
+        raw = encoder.decode(salt)
+        return align_salt(raw)
 
-    salt_raw = encoder.decode(salt)
-    return align_salt(salt_raw)
+    return hash_salt(salt)
 
 
 def print_stats(plain: str, cipher: str):
@@ -72,5 +72,5 @@ def print_stats(plain: str, cipher: str):
 
 
 def print_salt(salt: bytes, encoder: Encoder):
-    out = encode_data(salt, encoder)
-    click.echo(f"Salt: {out}", err=True)
+    out = encoder.encode(salt)
+    click.echo(f"Salt: {decode_bytes(out)}", err=True)
