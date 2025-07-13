@@ -137,7 +137,6 @@ Alice and Bob share a key for symmetric encryption:
 
 ```
 % soda genkey > shared
-
 % soda encrypt message shared > encrypted
 Plaintext length: 238
 Ciphertext length: 321
@@ -294,31 +293,17 @@ EJFRSZGDBILRUARMXRIVBXLQODRFKEOFFGDVJVZIFECDGHSMIVDSAZM
 Plaintext length: 238
 Ciphertext length: 353
 Overhead: 1.483
-
-% soda genkey -h
-Usage: soda genkey [OPTIONS]
-
-  Generate Private Key
-
-Options:
-  Encoding: [mutually_exclusive]
-    --base10
-    --base16
-    --base26
-    --base31
-    --base36                      (default)
-    --base41
-    --base64
-    --base94
-  -h, --help                      Show this message and exit.
 ```
 
 
 ## Applications
 
-The project may come in handy beyond the telegraphy system. \
-For example, I printed a backup of my Google credentials. 
-Here comes a fake version of the backup:
+The project may come in handy beyond the telegraphy system. 
+
+
+#### Printed backup
+
+I printed a backup of my Google credentials. Here comes a fake version of the backup:
 
 ```
 Password: +uMdh%~Sfmo[#CmFwJ4F
@@ -351,12 +336,11 @@ In this scenario, I lose all of my electronic devices simultaneously. \
 That is plausible because I was robbed in Georgia, so the risk exists. 
 
 
-Another usage is a password source:
+#### Password source
 
 ```
 % echo 'A quote from a book or a poem.' > quote
-% echo 'google.com' > website
-% soda kdf quote website --base94
-Salt: "SNx=<L1;<.B#]QWEx3u
-"!p$u{e%_8Fe;)a\sg-!O1KD<ptKV@booBHuwKXs
+% echo google.com | soda kdf quote - --base94 --raw-salt
+Salt: google.com
+O6j{s#.*vVA#pig.g,j('d="ABQ1)p?A=}xbC>i
 ```
