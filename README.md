@@ -41,14 +41,13 @@ Options:
   -h, --help  Show this message and exit.
 
 Commands:
-  decrypt     Decrypt message
-  encode      Encode file
-  encrypt     Encrypt message
-  find-error  Find error
-  genkey      Generate Private Key
-  kdf         Derive Private Key
-  print       Print table
-  pubkey      Get Public Key
+  decrypt     Decrypt message.
+  encrypt     Encrypt message.
+  find-error  Find error.
+  genkey      Generate Private Key.
+  kdf         Derive Private Key.
+  print       Print table.
+  pubkey      Get Public Key.
 ```
 
 
@@ -61,7 +60,7 @@ Commands:
 % soda genkey | tee bob | soda pubkey - > bob_pub
 
 % cat alice
-65AV4JO2P750P52WHSMZIQEM09483SZCACZIO9V2ALBBNI2GFQ
+fifRYlA+FMcNxb4bZO195MAiIi+JobLole5giV8C5uw=
 ```
 
 #### Encryption
@@ -81,44 +80,31 @@ Ciphertext length: 320
 Overhead: 1.345
 
 % head -c 61 encrypted
-E83LSBHQIL8EDX1JZP07GYH4UQMRCP03QKPN2ASH59SO7HHNDSK51ZK4FDKPK
+LL0463X97K62C3RNPC6S0JKL4HNLCURI4TMGU7D19LUDPN0PFATCW2WSRGQ7J
 
-% soda print encrypted 
+% soda print encrypted
 #	A    	B    	C    	D    	E    	F    	G    	
-1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
-2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
-3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
-4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
-5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
-6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
-7	03QKP	I4W9R	Y3D5N	1FNA7	O6PIB	WJ3JL	
-8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
-9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
-10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
+1	LL046	TCW2W	GAQ8H	VQKE7	GCE7T	RH9XF	I1LVG	
+2	3X97K	SRGQ7	HK31V	1E2O3	4W1DC	6BTW8	DUW9L	
+3	62C3R	JLAK3	5AWIR	BH03B	6UOIT	P6RK8	1UZHQ	
+4	NPC6S	YI3AE	59AAV	OW5E9	OFNCP	7ZF6U	A9OP2	
+5	0JKL4	JRCB5	I19SX	ZMDD9	2LKEF	XUSBJ	
+6	HNLCU	JGR0T	V1ZZX	MPR9N	2RORT	RW9KC	
+7	RI4TM	8BDAK	HJZEI	S04T1	7LXTN	STYJL	
+8	GU7D1	DY1J7	8VRJ5	JJP40	48F8O	39FZK	
+9	9LUDP	IJ8ZL	LG5UH	VB32L	6BTNG	NDVF9	
+10	N0PFA	5QZ30	9PPH6	AL67U	9VV3O	MPMNM	
 ```
 
 #### Decryption
 
-Bob recieves the message from Alice:
+Bob writes down the CW groups as he receives the message from Alice:
 
 ```
 % head -3 received 
-E83LS
-BHQIL
-8EDX1
-
-% soda print received
-#	A    	B    	C    	D    	E    	F    	G    	
-1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
-2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
-3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
-4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
-5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
-6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
-7	03QKP	I4W9R	Y3D5N	1FNA7	O6PIB	WJ3JL	
-8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
-9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
-10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268
+LL046
+3X97K
+62C3R
 
 % soda decrypt received bob alice_pub  
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
@@ -139,8 +125,8 @@ Alice and Bob share a key for symmetric encryption:
 % soda genkey > shared
 % soda encrypt message shared > encrypted
 Plaintext length: 238
-Ciphertext length: 321
-Overhead: 1.349
+Ciphertext length: 320
+Overhead: 1.345
 
 % soda decrypt encrypted shared
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
@@ -148,32 +134,25 @@ text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
 (c) Wikipedia
 Plaintext length: 238
-Ciphertext length: 321
-Overhead: 1.349
+Ciphertext length: 320
+Overhead: 1.345
 ```
 
 
 ## Key derivation
 
 The KDF function derives the key from the password and salt. \
-The salt will be generated if omitted. \
-The salt is hashed by default, which can be disabled by passing `--raw-salt`
+The salt is hashed (Blake2) by default, which can be disabled by passing `--raw-salt`
 
 ```
 % echo qwerty > password
-% soda kdf password
-Salt: 9RTY9ESH7RK4GUMX6DINC43O1
-3SY5V8E1M4ZX2A5YIYH3R6Q0DQ8QPT6WIADAGO36UFTBFZYWDZ
-
 % echo 12345 > salt
 % soda kdf password salt
-Salt: 3AIK26Z5MZ294C6SN7WV21X
-8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
+CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=
 
-% echo 3AIK26Z5MZ294C6SN7WV21X > salt
+% soda genkey > salt
 % soda kdf password salt --raw-salt
-Salt: 3AIK26Z5MZ294C6SN7WV21X
-8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
++fKPunsez0zcKHzs259Gr2TrI/8PXBUX8wlYX8pE9/M=
 ```
 
 
@@ -184,31 +163,28 @@ That works as follows:
 2. The 16-byte MAC and 24-byte nonce are added
 3. The result is encoded with Base36, which adds ~36% overhead
 
-Aside from the default `--zlib`, there are more compression options. \
-For a short message, the `--uncompressed` option provides smaller output.
-For a long text, the `--bz2` showed the best results. \
+Aside from the default zlib, there are more compression options. \
+For a short message, the raw option provides smaller output.
+For a long text, the bz2 showed the best results. \
 Overall, encrypting a letter into 1.345 letters is a working solution.
 
 ```
-% soda encrypt message alice bob_pub --zlib > encrypted
+% soda encrypt message alice bob_pub --compression zlib > /dev/null
 Plaintext length: 238
 Ciphertext length: 320
 Overhead: 1.345
-
-% soda encrypt message alice bob_pub --bz2 > encrypted
+% soda encrypt message alice bob_pub --compression bz2 > /dev/null 
 Plaintext length: 238
 Ciphertext length: 381
 Overhead: 1.601
-
-% soda encrypt message alice bob_pub --lzma > encrypted
+% soda encrypt message alice bob_pub --compression lzma > /dev/null
 Plaintext length: 238
-Ciphertext length: 372
-Overhead: 1.563
-
-% soda encrypt message alice bob_pub --uncompressed > encrypted
+Ciphertext length: 371
+Overhead: 1.559
+% soda encrypt message alice bob_pub --compression raw > /dev/null 
 Plaintext length: 238
-Ciphertext length: 431
-Overhead: 1.811
+Ciphertext length: 430
+Overhead: 1.807
 ```
 
 
@@ -217,82 +193,66 @@ Overhead: 1.811
 Alice and Bob communicate the checksums to compare the files: 
 
 <pre>
-% soda find-error encrypted 
-Checksum: F8
+% soda find-error received 
+Checksum: 1B
 Is it correct? [y/n]: n
-Checksum: 58
+Checksum: 14
 Is it correct? [y/n]: y
-Checksum: C9
+Checksum: 95
 Is it correct? [y/n]: n
-Checksum: 66
+Checksum: 6D
 Is it correct? [y/n]: n
-Checksum: BC
+Checksum: 29
 Is it correct? [y/n]: n
-Checksum: 94
+Checksum: F9
 Is it correct? [y/n]: n
-Checksum: 8D
+Checksum: 10
 Is it correct? [y/n]: n
-The error is in: I4W9R
+The error is in: 8BBAK
 #	A    	B    	C    	D    	E    	F    	G    	
-1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
-2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
-3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
-4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
-5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
-6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
-7	03QKP	<b><ins>I4W9R</ins></b>	Y3D5N	1FNA7	O6PIB	WJ3JL	
-8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
-9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
-10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
-
-% soda find-error received
-Checksum: 36
-Is it correct? [y/n]: n
-Checksum: 58
-Is it correct? [y/n]: y
-Checksum: 7
-Is it correct? [y/n]: n
-Checksum: 15
-Is it correct? [y/n]: n
-Checksum: 9A
-Is it correct? [y/n]: n
-Checksum: 71
-Is it correct? [y/n]: n
-Checksum: F4
-Is it correct? [y/n]: n
-The error is in: IVW9R
-#	A    	B    	C    	D    	E    	F    	G    	
-1	E83LS	K51ZK	YI92O	RBBVR	SJLLJ	NQD7Q	0K5QP	
-2	BHQIL	4FDKP	AF8LP	YCH3L	94AWX	DBVMU	8G28D	
-3	8EDX1	KQAEW	TSQ8C	22VL1	R4G4Y	MNTVD	40GNZ	
-4	JZP07	AFO1Q	WXBE3	51SUU	FFREO	R1A4P	CWU55	
-5	GYH4U	JXXBN	SWE75	LKGTT	8M64Z	U7FPQ	
-6	QMRCP	SVXW9	7U0JI	G4MCB	8AQ5F	7XUCQ	
-7	03QKP	<b><ins>IVW9R</ins></b>	Y3D5N	1FNA7	O6PIB	WJ3JL	
-8	N2ASH	65256	NWXKW	3A47D	579CT	RICC7	
-9	59SO7	XN0FU	KAF6L	9DZEM	TY7CL	LJ0RP	
-10	HHNDS	P854Y	A9Z58	BRNV7	HY8H7	TR268	
+1	LL046	TCW2W	GAQ8H	VQKE7	GCE7T	RH9XF	I1LVG	
+2	3X97K	SRGQ7	HK31V	1E2O3	4W1DC	6BTW8	DUW9L	
+3	62C3R	JLAK3	5AWIR	BH03B	6UOIT	P6RK8	1UZHQ	
+4	NPC6S	YI3AE	59AAV	OW5E9	OFNCP	7ZF6U	A9OP2	
+5	0JKL4	JRCB5	I19SX	ZMDD9	2LKEF	XUSBJ	
+6	HNLCU	JGR0T	V1ZZX	MPR9N	2RORT	RW9KC	
+7	RI4TM	<b><ins>8BBAK</ins></b>	HJZEI	S04T1	7LXTN	STYJL	
+8	GU7D1	DY1J7	8VRJ5	JJP40	48F8O	39FZK	
+9	9LUDP	IJ8ZL	LG5UH	VB32L	6BTNG	NDVF9	
+10	N0PFA	5QZ30	9PPH6	AL67U	9VV3O	MPMNM	
 </pre>
 
 
 ## Using a custom Morse alphabet
 
-The cw-soda supports various encodings (alphabets), which can be set with the `--baseXX` flag. \
-The encoding must be consistent across all inputs. \
-You can convert the keys with `encode`:
+The cw-soda supports various encodings (alphabets), which can be set with the `--data-encoding` flag:
 
 ```
-% soda encode alice --out-base26 > alice26
-% soda encode alice_pub --out-base26 > alice_pub26
-% cat alice alice26 
-65AV4JO2P750P52WHSMZIQEM09483SZCACZIO9V2ALBBNI2GFQ
-EJFRSZGDBILRUARMXRIVBXLQODRFKEOFFGDVJVZIFECDGHSMIVDSAZM
-
-% soda genkey --base26 | tee claire | soda pubkey --base26 - > claire_pub
-% soda encrypt message alice26 claire_pub --base26 > encrypted 
+% soda encrypt message alice bob_pub --data-encoding base26 > encrypted26
 Plaintext length: 238
-Ciphertext length: 353
-Overhead: 1.483
+Ciphertext length: 352
+Overhead: 1.479
+
+% head -c 60 encrypted26 
+CSUORCUPOTKOIAVIBYTJDVGZXYBUXKNTKGJQGORIMAKFRLOVPQXMVBJCQOGP
+
+% soda encrypt -h
+Usage: soda encrypt [OPTIONS] MESSAGE_FILE PRIVATE_KEY_FILE [PUBLIC_KEY_FILE]
+
+  Encrypt message.
+
+  Key encoding: base26 | base31 | base36 | base64 | base94
+
+  Data encoding: base26 | base31 | base36 | base64 | base94 | binary
+
+  Compression: zlib | bz2 | lzma | raw
+
+Options:
+  --output-file FILENAME  (Optional)
+  --key-encoding TEXT     [default: base64]
+  --data-encoding TEXT    [default: base36]
+  --compression TEXT      [default: zlib]
+  -h, --help              Show this message and exit.
 ```
 
 
@@ -340,7 +300,12 @@ That is plausible because I was robbed in Georgia, so the risk exists.
 
 ```
 % echo 'A quote from a book or a poem.' > quote
-% echo google.com | soda kdf quote - --base94 --raw-salt
-Salt: google.com
-O6j{s#.*vVA#pig.g,j('d="ABQ1)p?A=}xbC>i
+% echo google.com | soda kdf quote - --encoding base94
+"!p$u{e%_8Fe;)a\sg-!O1KD<ptKV@booBHuwKXs
 ```
+
+
+## Compatibility
+
+During the initial development (versions prior to 1.0.0), 
+I reserve the right to break backwards compatibility. 

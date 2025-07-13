@@ -42,12 +42,12 @@ archivers = {
     "zlib": compress_zlib,
     "bz2": compress_bz2,
     "lzma": compress_lzma,
-    "uncompressed": noop,
+    "raw": noop,
 }
 
 unarchivers = {
     "zlib": decompress_zlib,
     "bz2": decompress_bz2,
     "lzma": decompress_lzma,
-    "uncompressed": noop,
+    "raw": noop,
 }

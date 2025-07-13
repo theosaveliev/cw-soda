@@ -2,7 +2,6 @@
 import pytest
 from click.testing import CliRunner
 
-from cw_soda.encoders import encoders
 from cw_soda.main import cli
 
 
@@ -32,8 +31,8 @@ def key():
 def encrypted_public():
     """The password encrypted with the Public module."""
     return {
-        "uncompressed": "1BELDG5XZ7GDBS48H5NATGAXPUOITZR0X48RNGV2UALN7JLC88NOCQSQJPMV94"
-        "AB41G4HCIM",
+        "raw": "1BELDG5XZ7GDBS48H5NATGAXPUOITZR0X48RNGV2UALN7JLC88NOCQSQJPMV94AB41G4HCI"
+        "M",
         "zlib": "4CAXMJM3ULPX7BCR8O20M3G9GFNZBPBYRKDQK4NM6PWGRLPDCIFBLHXBFGLRGCZIP19MDN"
         "PJMC2V3RK8KIHX",
         "bz2": "MDUC9F8RZNC2XCIXE67T5OPSXGGYU8A8DGJ2ANC0BJ990KR09FS73T1PVX8HICH6R8SIHOS"
@@ -47,60 +46,58 @@ def encrypted_public():
 def encrypted_secret():
     """The password encrypted with the Secret module."""
     return {
-        "uncompressed": "54N2ZP3PH56LVV2K2GLW6AK7PALBZ1VDHP7DXPRHM061WVA1K8HOAY3T4ELX6L"
-        "671L0KOM2",
+        "raw": "54N2ZP3PH56LVV2K2GLW6AK7PALBZ1VDHP7DXPRHM061WVA1K8HOAY3T4ELX6L671L0KOM2"
     }
 
 
 def test_genkey():
     runner = CliRunner()
-    for key in encoders:
-        enc = f"--{key}"
-        result = runner.invoke(cli, ["genkey", enc])
+    text_encoders = ["base26", "base31", "base36", "base64", "base94"]
+    for enc in text_encoders:
+        result = runner.invoke(cli, ["genkey", "--encoding", enc])
         assert result.exit_code == 0
         assert len(result.stdout) > 30
 
 
 def test_pubkey(key):
     runner = CliRunner()
-    args = ["pubkey", "-", "--base36"]
+    args = ["pubkey", "-", "--encoding", "base36"]
     result = runner.invoke(cli, args=args, input=key["private36"])
     assert result.exit_code == 0
     assert result.stdout == key["public36"] + "\n"
 
 
-def test_encode(key):
-    runner = CliRunner()
-    args = ["encode", "-", "--in-base36", "--out-base64"]
-    result = runner.invoke(cli, args=args, input=key["private36"])
-    assert result.exit_code == 0
-    assert result.stdout == key["private64"] + "\n"
-
-
-def test_kdf(password, salt, key):
+def test_kdf_plain(password, salt, key):
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open("password", "w", encoding="utf-8") as fd:
             fd.write(password)
 
-        with open("salt_plain", "w", encoding="utf-8") as fd:
+        with open("salt", "w", encoding="utf-8") as fd:
             fd.write(salt["plain"])
 
-        with open("salt_hash", "w", encoding="utf-8") as fd:
+        args = ["kdf", "password", "salt", "--encoding", "base36"]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+        assert result.stdout == key["private36"] + "\n"
+
+
+def test_kdf_hash(password, salt, key):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("password", "w", encoding="utf-8") as fd:
+            fd.write(password)
+
+        with open("salt", "w", encoding="utf-8") as fd:
             fd.write(salt["hash"])
 
-        args = ["kdf", "password", "salt_plain", "--base36"]
-        result = runner.invoke(cli, args=args)
-        assert result.exit_code == 0
-        assert result.stdout == key["private36"] + "\n"
-
-        args = ["kdf", "password", "salt_hash", "--base36", "--raw-salt"]
+        args = ["kdf", "password", "salt", "--encoding", "base36", "--raw-salt"]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == key["private36"] + "\n"
 
 
-def test_decrypt(password, key, encrypted_public, encrypted_secret):
+def test_decrypt_public(password, key, encrypted_public):
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open("private", "w", encoding="utf-8") as fd:
@@ -109,33 +106,67 @@ def test_decrypt(password, key, encrypted_public, encrypted_secret):
         with open("public", "w", encoding="utf-8") as fd:
             fd.write(key["public36"])
 
-        args = ["decrypt", "-", "private", "public", "--base36", "--uncompressed"]
-        result = runner.invoke(cli, args=args, input=encrypted_public["uncompressed"])
+        args = [
+            "decrypt",
+            "-",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
+        result = runner.invoke(cli, args=args, input=encrypted_public["raw"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["decrypt", "-", "private", "public", "--base36", "--zlib"]
+        args.pop()
+        args.append("zlib")
         result = runner.invoke(cli, args=args, input=encrypted_public["zlib"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["decrypt", "-", "private", "public", "--base36", "--bz2"]
+        args.pop()
+        args.append("bz2")
         result = runner.invoke(cli, args=args, input=encrypted_public["bz2"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["decrypt", "-", "private", "public", "--base36", "--lzma"]
+        args.pop()
+        args.append("lzma")
         result = runner.invoke(cli, args=args, input=encrypted_public["lzma"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["decrypt", "-", "private", "--base36", "--uncompressed"]
-        result = runner.invoke(cli, args=args, input=encrypted_secret["uncompressed"])
+
+def test_decrypt_secret(password, key, encrypted_secret):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
+
+        with open("public", "w", encoding="utf-8") as fd:
+            fd.write(key["public36"])
+
+        args = [
+            "decrypt",
+            "-",
+            "private",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
+        result = runner.invoke(cli, args=args, input=encrypted_secret["raw"])
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
 
-def test_encrypt(password, key):
+def test_encrypt_public(password, key):
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open("private", "w", encoding="utf-8") as fd:
@@ -147,37 +178,165 @@ def test_encrypt(password, key):
         with open("message", "w", encoding="utf-8") as fd:
             fd.write(password)
 
-        args = ["encrypt", "message", "private", "public", "--base36", "--uncompressed"]
+        args = [
+            "encrypt",
+            "message",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
         result = runner.invoke(cli, args=args)
-        encrypted = result.stdout
         assert result.exit_code == 0
+        encrypted = result.stdout
 
-        args = ["decrypt", "-", "private", "public", "--base36", "--uncompressed"]
+        args = [
+            "decrypt",
+            "-",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
         result = runner.invoke(cli, args=args, input=encrypted)
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["encrypt", "message", "private", "--base36", "--uncompressed"]
-        result = runner.invoke(cli, args=args)
-        encrypted = result.stdout
-        assert result.exit_code == 0
 
-        args = ["decrypt", "-", "private", "--base36", "--uncompressed"]
+def test_encrypt_secret(password, key):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
+
+        with open("message", "w", encoding="utf-8") as fd:
+            fd.write(password)
+
+        args = [
+            "encrypt",
+            "message",
+            "private",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+        encrypted = result.stdout
+
+        args = [
+            "decrypt",
+            "-",
+            "private",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "raw",
+        ]
         result = runner.invoke(cli, args=args, input=encrypted)
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
 
-        args = ["encrypt", "message", "private", "public", "--base36", "--zlib"]
+
+def test_encrypt_public_binary(password, key):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
+
+        with open("public", "w", encoding="utf-8") as fd:
+            fd.write(key["public36"])
+
+        with open("message", "w", encoding="utf-8") as fd:
+            fd.write(password)
+
+        args = [
+            "encrypt",
+            "message",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "binary",
+            "--compression",
+            "raw",
+            "--output-file",
+            "encrypt_output",
+        ]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+
+        args = [
+            "decrypt",
+            "encrypt_output",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "binary",
+            "--compression",
+            "raw",
+            "--output-file",
+            "decrypt_output",
+        ]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+
+        with open("decrypt_output", "rt", encoding="utf-8") as fd:
+            assert fd.read() == password
+
+
+def test_encrypt_public_compression(password, key):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("private", "w", encoding="utf-8") as fd:
+            fd.write(key["private36"])
+
+        with open("public", "w", encoding="utf-8") as fd:
+            fd.write(key["public36"])
+
+        with open("message", "w", encoding="utf-8") as fd:
+            fd.write(password)
+
+        args = [
+            "encrypt",
+            "message",
+            "private",
+            "public",
+            "--key-encoding",
+            "base36",
+            "--data-encoding",
+            "base36",
+            "--compression",
+            "zlib",
+        ]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60
 
-        args = ["encrypt", "message", "private", "public", "--base36", "--bz2"]
+        args.pop()
+        args.append("bz2")
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60
 
-        args = ["encrypt", "message", "private", "public", "--base36", "--lzma"]
+        args.pop()
+        args.append("lzma")
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert len(result.stdout) > 60

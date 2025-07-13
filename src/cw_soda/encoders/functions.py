@@ -17,9 +17,6 @@ def int_to_base(number: int, alphabet: str) -> str:
         abs_number, remainder = divmod(abs_number, base)
         result.append(alphabet[remainder])
 
-    if number < 0:
-        result.append("-")
-
     return "".join(reversed(result))
 
 
@@ -33,7 +30,8 @@ def base_to_int(source: str, alphabet: str) -> int:
 
 
 def bytes_to_base(source: bytes, alphabet: str) -> str:
-    return int_to_base(int.from_bytes(source), alphabet)
+    number = int.from_bytes(source, byteorder="big", signed=False)
+    return int_to_base(number, alphabet)
 
 
 def int_to_bytes(number: int) -> bytes:

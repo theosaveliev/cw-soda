@@ -1,26 +1,30 @@
-from typing import TextIO
+from typing import BinaryIO, TextIO
 
 import click
 from nacl.public import PrivateKey
 
 from cw_soda.archivers import archivers, unarchivers
 from cw_soda.cryptography import public, secret
-from cw_soda.encoders import decode_bytes, encode_str, encoders
+from cw_soda.encoders import (
+    decode_bytes,
+    encoders,
+)
 from cw_soda.error_search import checksum_calculators, error_search
 from cw_soda.format_table import format_table
 from cw_soda.io_utils import (
     get_salt,
     init_keypair,
-    print_salt,
     print_stats,
     read_bytes,
+    read_ciphretext,
     read_groups,
-    read_str,
-    remove_whitespace,
+    read_message,
+    write_output,
 )
-from cw_soda.soda_options import soda_options
 
-file_arg = click.File(mode="r", encoding="utf-8", errors="strict")
+text_file = click.File(mode="r", encoding="utf-8", errors="strict")
+bin_file = click.File(mode="rb")
+out_file = click.File(mode="wb")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -29,155 +33,183 @@ def cli():
     pass
 
 
-@click.command(help="Generate Private Key")
-@soda_options.encoding
+@click.command()
+@click.option("--encoding", default="base64", show_default=True)
 def genkey_cmd(encoding: str):
+    """Generate Private Key.
+
+    Encoding: base26 | base31 | base36 | base64 | base94
+    """
     enc = encoders[encoding]
     key = PrivateKey.generate().encode(enc)
     click.echo(decode_bytes(key))
 
 
-@click.command(help="Get Public Key")
-@click.argument("private_key", type=file_arg)
-@soda_options.encoding
-def pubkey_cmd(private_key: TextIO, encoding: str):
+@click.command()
+@click.argument("private_key_file", type=text_file)
+@click.option("--encoding", default="base64", show_default=True)
+def pubkey_cmd(private_key_file: TextIO, encoding: str):
+    """Get Public Key.
+
+    Encoding: base26 | base31 | base36 | base64 | base94
+    """
     enc = encoders[encoding]
-    pk = read_bytes(private_key)
+    pk = read_bytes(private_key_file)
     pk = PrivateKey(pk, enc)
     pub = pk.public_key.encode(enc)
     click.echo(decode_bytes(pub))
 
 
-@click.command(help="Encode file")
-@click.argument("file", type=file_arg)
-@soda_options.in_encoding
-@soda_options.out_encoding
-def encode_cmd(file: TextIO, in_encoding: str, out_encoding: str):
-    in_enc = encoders[in_encoding]
-    out_enc = encoders[out_encoding]
-    key = read_bytes(file)
-    key = in_enc.decode(key)
-    key = out_enc.encode(key)
-    key = decode_bytes(key)
-    click.echo(key)
+@click.command()
+@click.argument("password_file", type=text_file)
+@click.argument("salt_file", type=text_file)
+@click.option("--encoding", default="base64", show_default=True)
+@click.option("--raw-salt", is_flag=True, help="Decode the salt as bytes")
+def kdf_cmd(password_file: TextIO, salt_file: TextIO, encoding: str, raw_salt: bool):
+    """Derive Private Key.
 
-
-@click.command(help="Derive Private Key")
-@click.argument("password", type=file_arg)
-@click.argument("salt", type=file_arg, required=False)
-@soda_options.encoding
-@soda_options.raw_salt
-def kdf_cmd(password: TextIO, salt: TextIO, encoding: str, raw_salt: bool):
+    Encoding: base26 | base31 | base36 | base64 | base94
+    """
     enc = encoders[encoding]
-    password = read_bytes(password)
-    salt = get_salt(salt, raw_salt, enc)
-    print_salt(salt, enc)
+    password = read_bytes(password_file)
+    salt = get_salt(salt_file, raw_salt, enc)
     key = public.kdf(password, salt, enc)
-    key = decode_bytes(key)
-    click.echo(key)
+    click.echo(decode_bytes(key))
 
 
-@click.command(help="Encrypt message")
-@click.argument("message", type=file_arg)
-@click.argument("private_key", type=file_arg)
-@click.argument("public_key", type=file_arg, required=False)
-@soda_options.encoding
-@soda_options.compression
+@click.command()
+@click.argument("message_file", type=bin_file)
+@click.argument("private_key_file", type=text_file)
+@click.argument("public_key_file", type=text_file, required=False)
+@click.option("--output-file", type=out_file, help="(Optional)")
+@click.option("--key-encoding", default="base64", show_default=True)
+@click.option("--data-encoding", default="base36", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
 def encrypt_cmd(
-    message: TextIO,
-    private_key: TextIO,
-    public_key: TextIO,
-    encoding: str,
+    message_file: BinaryIO,
+    private_key_file: TextIO,
+    public_key_file: TextIO,
+    output_file: BinaryIO,
+    key_encoding: str,
+    data_encoding: str,
     compression: str,
 ):
-    enc = encoders[encoding]
-    compress = archivers[compression]
-    data = data_stat = read_str(message)
-    data = encode_str(data)
-    data = compress(data)
-    if public_key is None:
-        key = read_bytes(private_key)
-        encrypted = secret.encrypt(key, data, enc)
-    else:
-        priv, pub = init_keypair(private_key, public_key, enc)
-        encrypted = public.encrypt(priv, pub, data, enc)
+    """Encrypt message.
 
-    encrypted = decode_bytes(encrypted)
-    click.echo(encrypted)
+    Key encoding: base26 | base31 | base36 | base64 | base94
+
+    Data encoding: base26 | base31 | base36 | base64 | base94 | binary
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    key_enc = encoders[key_encoding]
+    data_enc = encoders[data_encoding]
+    archiver = archivers[compression]
+    data = data_stat = read_message(message_file, data_enc)
+    data = archiver(data)
+    if public_key_file is None:
+        key = read_bytes(private_key_file)
+        encrypted = secret.encrypt(key, data, key_enc, data_enc)
+    else:
+        priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
+        encrypted = public.encrypt(priv, pub, data, data_enc)
+
+    write_output(output_file, encrypted, data_enc)
     print_stats(data_stat, encrypted)
 
 
-@click.command(help="Decrypt message")
-@click.argument("message", type=file_arg)
-@click.argument("private_key", type=file_arg)
-@click.argument("public_key", type=file_arg, required=False)
-@soda_options.encoding
-@soda_options.compression
+@click.command()
+@click.argument("message_file", type=bin_file)
+@click.argument("private_key_file", type=text_file)
+@click.argument("public_key_file", type=text_file, required=False)
+@click.option("--output-file", type=out_file, help="(Optional)")
+@click.option("--key-encoding", default="base64", show_default=True)
+@click.option("--data-encoding", default="base36", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
 def decrypt_cmd(
-    message: TextIO,
-    private_key: TextIO,
-    public_key: TextIO,
-    encoding: str,
+    message_file: BinaryIO,
+    private_key_file: TextIO,
+    public_key_file: TextIO,
+    output_file: BinaryIO,
+    key_encoding: str,
+    data_encoding: str,
     compression: str,
 ):
-    enc = encoders[encoding]
-    decompress = unarchivers[compression]
-    data = read_str(message)
-    data = data_stat = remove_whitespace(data)
-    data = encode_str(data)
-    if public_key is None:
-        key = read_bytes(private_key)
-        plain = secret.decrypt(key, data, enc)
-    else:
-        priv, pub = init_keypair(private_key, public_key, enc)
-        plain = public.decrypt(priv, pub, data, enc)
+    """Decrypt message.
 
-    plain = decompress(plain)
-    plain = decode_bytes(plain)
-    click.echo(plain)
+    Key encoding: base26 | base31 | base36 | base64 | base94
+
+    Data encoding: base26 | base31 | base36 | base64 | base94 | binary
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    key_enc = encoders[key_encoding]
+    data_enc = encoders[data_encoding]
+    unarchiver = unarchivers[compression]
+    data = data_stat = read_ciphretext(message_file, data_enc)
+    if public_key_file is None:
+        key = read_bytes(private_key_file)
+        plain = secret.decrypt(key, data, key_enc, data_enc)
+    else:
+        priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
+        plain = public.decrypt(priv, pub, data, data_enc)
+
+    plain = unarchiver(plain)
+    write_output(output_file, plain, data_enc)
     print_stats(plain, data_stat)
 
 
-@click.command(help="Print table")
-@click.argument("message", type=file_arg)
-@soda_options.output_format
-@soda_options.column_height
+@click.command()
+@click.argument("message_file", type=text_file)
+@click.option("--output-format", default="fixed", show_default=True)
+@click.option("--column-height", default=10, show_default=True)
 @click.option("--no-header", is_flag=True)
-def print_cmd(message: TextIO, output_format: str, column_height: int, no_header: bool):
+def print_cmd(
+    message_file: TextIO, output_format: str, column_height: int, no_header: bool
+):
+    """Print table.
+
+    Output format: fixed | csv
+    """
     add_header = not no_header
-    groups = read_groups(message)
+    groups = read_groups(message_file)
     table = format_table(groups, output_format, column_height, add_header)
     click.echo(table)
 
 
-@click.command(help="Find error")
-@click.argument("message", type=file_arg)
-@soda_options.checksum
-@soda_options.output_format
-@soda_options.column_height
+@click.command()
+@click.argument("message_file", type=text_file)
+@click.option("--checksum", default="crc8", show_default=True)
+@click.option("--output-format", default="fixed", show_default=True)
+@click.option("--column-height", default=10, show_default=True)
 @click.option("--no-header", is_flag=True)
 def find_error_cmd(
-    message: TextIO,
+    message_file: TextIO,
     checksum: str,
     output_format: str,
     column_height: int,
     no_header: bool,
 ):
+    """Find error.
+
+    Checksum: crc8 | crc16 | crc32
+
+    Output format: fixed | csv
+    """
     add_header = not no_header
     calc = checksum_calculators[checksum]
-    groups = read_groups(message)
+    groups = read_groups(message_file)
     error = error_search(groups, calc)
-    if error is not None:
+    if error is None:
+        click.echo("The file is correct")
+    else:
         click.echo(f"The error is in: {error}")
         table = format_table(groups, output_format, column_height, add_header, error)
         click.echo(table)
-    else:
-        click.echo("The file is correct")
 
 
 cli.add_command(genkey_cmd)
 cli.add_command(pubkey_cmd)
-cli.add_command(encode_cmd)
 cli.add_command(kdf_cmd)
 cli.add_command(encrypt_cmd)
 cli.add_command(decrypt_cmd)
