@@ -5,7 +5,7 @@ import click
 from nacl.encoding import Encoder
 from nacl.public import PrivateKey, PublicKey
 
-from cw_soda.cryptography.hash import align_salt, hash_salt
+from cw_soda.cryptography.kdf import align_salt, hash_salt
 from cw_soda.encoders import RawEncoder, decode_bytes, encode_str
 
 __all__ = [
@@ -74,7 +74,8 @@ def write_output(output_file: BinaryIO | None, data: bytes, out_enc: Encoder):
     if output_file is not None:
         output_file.write(data)
     elif out_enc == RawEncoder:
-        raise NotImplementedError("--output-file is required for binary output")
+        click.confirm("Print binary file to the terminal?", default=False, abort=True)
+        click.echo(data)
     else:
         click.echo(decode_bytes(data))
 

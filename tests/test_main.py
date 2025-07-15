@@ -76,7 +76,15 @@ def test_kdf_plain(password, salt, key):
         with open("salt", "w", encoding="utf-8") as fd:
             fd.write(salt["plain"])
 
-        args = ["kdf", "password", "salt", "--encoding", "base36"]
+        args = [
+            "kdf",
+            "password",
+            "salt",
+            "--encoding",
+            "base36",
+            "--profile",
+            "interactive",
+        ]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == key["private36"] + "\n"
@@ -91,7 +99,16 @@ def test_kdf_hash(password, salt, key):
         with open("salt", "w", encoding="utf-8") as fd:
             fd.write(salt["hash"])
 
-        args = ["kdf", "password", "salt", "--encoding", "base36", "--raw-salt"]
+        args = [
+            "kdf",
+            "password",
+            "salt",
+            "--encoding",
+            "base36",
+            "--profile",
+            "interactive",
+            "--raw-salt",
+        ]
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == key["private36"] + "\n"

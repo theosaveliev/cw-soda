@@ -141,14 +141,18 @@ Overhead: 1.345
 
 ## Key derivation
 
-The KDF function derives the key from the password and salt. \
-The salt is hashed (Blake2) by default, which can be disabled by passing `--raw-salt`
+The KDF function derives the key from the password and salt. 
+It accepts different profiles: interactive, moderate, and sensitive. \
+The salt is hashed (Blake2) by default, which can be disabled by passing `--raw-salt` 
 
 ```
 % echo qwerty > password
 % echo 12345 > salt
 % soda kdf password salt
 CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=
+
+% soda kdf password salt --profile sensitive
+mES3FHeCCN9M+Q4Vz70gw6aNajwZVfzZKwei9VmWOAU=
 
 % soda genkey > salt
 % soda kdf password salt --raw-salt
@@ -223,36 +227,28 @@ The error is in: 8BBAK
 </pre>
 
 
-## Using a custom Morse alphabet
+## Encoding
 
-The cw-soda supports various encodings (alphabets), which can be set with the `--data-encoding` flag:
+The cw-soda supports various encodings:
+
+- Base26 (Latin)
+- Base31 (Cyrillic)
+- Base36 (Latin with numbers)
+- Base64 (RFC 3548)
+- Base94 (ASCII printable)
+- Binary
 
 ```
-% soda encrypt message alice bob_pub --data-encoding base26 > encrypted26
+% soda genkey --encoding base26 | tee key26  
+DROFNIXGVGDTLEAVZDNGXVYRLYOAOSDFGXZMRVUJRCCLKOVYPVCNITT
+
+% soda encrypt message key26 --key-encoding base26 --data-encoding base26 > encrypted
 Plaintext length: 238
-Ciphertext length: 352
-Overhead: 1.479
+Ciphertext length: 353
+Overhead: 1.483
 
-% head -c 60 encrypted26 
-CSUORCUPOTKOIAVIBYTJDVGZXYBUXKNTKGJQGORIMAKFRLOVPQXMVBJCQOGP
-
-% soda encrypt -h
-Usage: soda encrypt [OPTIONS] MESSAGE_FILE PRIVATE_KEY_FILE [PUBLIC_KEY_FILE]
-
-  Encrypt message.
-
-  Key encoding: base26 | base31 | base36 | base64 | base94
-
-  Data encoding: base26 | base31 | base36 | base64 | base94 | binary
-
-  Compression: zlib | bz2 | lzma | raw
-
-Options:
-  --output-file FILENAME  (Optional)
-  --key-encoding TEXT     [default: base64]
-  --data-encoding TEXT    [default: base36]
-  --compression TEXT      [default: zlib]
-  -h, --help              Show this message and exit.
+% head -c 55 encrypted
+BWOUCHPOOHJCTUEXGVEGDSVKXOPOBUXOAECZUHHYUZGBALFKMRHZDJE
 ```
 
 

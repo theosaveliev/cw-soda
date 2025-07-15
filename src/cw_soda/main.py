@@ -5,10 +5,8 @@ from nacl.public import PrivateKey
 
 from cw_soda.archivers import archivers, unarchivers
 from cw_soda.cryptography import public, secret
-from cw_soda.encoders import (
-    decode_bytes,
-    encoders,
-)
+from cw_soda.cryptography.kdf import kdf, kdf_profiles
+from cw_soda.encoders import decode_bytes, encoders
 from cw_soda.error_search import checksum_calculators, error_search
 from cw_soda.format_table import format_table
 from cw_soda.io_utils import (
@@ -24,7 +22,7 @@ from cw_soda.io_utils import (
 
 text_file = click.File(mode="r", encoding="utf-8", errors="strict")
 bin_file = click.File(mode="rb")
-out_file = click.File(mode="wb")
+out_file = click.File(mode="wb", lazy=False, atomic=False)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -64,16 +62,26 @@ def pubkey_cmd(private_key_file: TextIO, encoding: str):
 @click.argument("password_file", type=text_file)
 @click.argument("salt_file", type=text_file)
 @click.option("--encoding", default="base64", show_default=True)
+@click.option("--profile", default="interactive", show_default=True)
 @click.option("--raw-salt", is_flag=True, help="Decode the salt as bytes")
-def kdf_cmd(password_file: TextIO, salt_file: TextIO, encoding: str, raw_salt: bool):
+def kdf_cmd(
+    password_file: TextIO,
+    salt_file: TextIO,
+    encoding: str,
+    profile: str,
+    raw_salt: bool,
+):
     """Derive Private Key.
 
     Encoding: base26 | base31 | base36 | base64 | base94
+
+    Profile: interactive | moderate | sensitive
     """
     enc = encoders[encoding]
+    prof = kdf_profiles[profile]
     password = read_bytes(password_file)
     salt = get_salt(salt_file, raw_salt, enc)
-    key = public.kdf(password, salt, enc)
+    key = kdf(password, salt, prof, enc)
     click.echo(decode_bytes(key))
 
 
