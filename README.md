@@ -16,6 +16,7 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 
 
 ## Installation
+#### Package manager
 
 1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 2. Install cw-soda:
@@ -26,6 +27,12 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
    ```
    % uv tool uninstall cw-soda
    ```
+
+#### Docker
+
+```
+% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.1
+```
 
 
 ## Getting help
