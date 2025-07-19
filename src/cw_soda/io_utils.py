@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from typing import BinaryIO, TextIO
 
 import click
@@ -70,9 +71,12 @@ def print_stats(plain, cipher):
     click.echo(f"Overhead: {overhead:.3f}", err=True)
 
 
-def write_output(output_file: BinaryIO | None, data: bytes, out_enc: Encoder):
+def write_output(output_file: Path | None, data: bytes, out_enc: Encoder):
     if output_file is not None:
-        output_file.write(data)
+        if output_file.exists():
+            click.confirm("Overwrite the output file?", default=False, abort=True)
+
+        output_file.write_bytes(data)
     elif out_enc == RawEncoder:
         click.confirm("Print binary file to the terminal?", default=False, abort=True)
         click.echo(data)

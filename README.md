@@ -31,7 +31,7 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 #### Docker
 
 ```
-% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.1
+% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.2
 ```
 
 

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import BinaryIO, TextIO
 
 import click
@@ -22,7 +23,7 @@ from cw_soda.io_utils import (
 
 text_file = click.File(mode="r", encoding="utf-8", errors="strict")
 bin_file = click.File(mode="rb")
-out_file = click.File(mode="wb", lazy=False, atomic=False)
+out_path = click.Path(dir_okay=False, writable=True, path_type=Path)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -89,7 +90,7 @@ def kdf_cmd(
 @click.argument("message_file", type=bin_file)
 @click.argument("private_key_file", type=text_file)
 @click.argument("public_key_file", type=text_file, required=False)
-@click.option("--output-file", type=out_file, help="(Optional)")
+@click.option("--output-file", type=out_path, help="(Optional)")
 @click.option("--key-encoding", default="base64", show_default=True)
 @click.option("--data-encoding", default="base36", show_default=True)
 @click.option("--compression", default="zlib", show_default=True)
@@ -97,7 +98,7 @@ def encrypt_cmd(
     message_file: BinaryIO,
     private_key_file: TextIO,
     public_key_file: TextIO,
-    output_file: BinaryIO,
+    output_file: Path,
     key_encoding: str,
     data_encoding: str,
     compression: str,
@@ -130,7 +131,7 @@ def encrypt_cmd(
 @click.argument("message_file", type=bin_file)
 @click.argument("private_key_file", type=text_file)
 @click.argument("public_key_file", type=text_file, required=False)
-@click.option("--output-file", type=out_file, help="(Optional)")
+@click.option("--output-file", type=out_path, help="(Optional)")
 @click.option("--key-encoding", default="base64", show_default=True)
 @click.option("--data-encoding", default="base36", show_default=True)
 @click.option("--compression", default="zlib", show_default=True)
@@ -138,7 +139,7 @@ def decrypt_cmd(
     message_file: BinaryIO,
     private_key_file: TextIO,
     public_key_file: TextIO,
-    output_file: BinaryIO,
+    output_file: Path,
     key_encoding: str,
     data_encoding: str,
     compression: str,
