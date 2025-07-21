@@ -308,6 +308,18 @@ That is plausible because I was robbed in Georgia, so the risk exists.
 ```
 
 
+#### Getting WireGuard key from password
+
+The keys are compatible with WireGuard, so you can use the KDF function for keying.
+
+```
+% wg genkey | tee wg_key | wg pubkey
+kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
+% soda pubkey wg_key 
+kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
+```
+
+
 ## Compatibility
 
 During the initial development (versions prior to 1.0.0), 
