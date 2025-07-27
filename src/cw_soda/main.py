@@ -15,7 +15,8 @@ from cw_soda.io_utils import (
     init_keypair,
     print_stats,
     read_bytes,
-    read_ciphretext,
+    read_bytes_formatted,
+    read_ciphertext,
     read_groups,
     read_message,
     write_output,
@@ -33,9 +34,9 @@ def cli():
 
 
 @click.command()
-@click.option("--encoding", default="base64", show_default=True)
+@click.option("--encoding", default="base36", show_default=True)
 def genkey_cmd(encoding: str):
-    """Generate Private Key.
+    """Key Generator.
 
     Encoding: base26 | base31 | base36 | base64 | base94
     """
@@ -46,14 +47,14 @@ def genkey_cmd(encoding: str):
 
 @click.command()
 @click.argument("private_key_file", type=text_file)
-@click.option("--encoding", default="base64", show_default=True)
+@click.option("--encoding", default="base36", show_default=True)
 def pubkey_cmd(private_key_file: TextIO, encoding: str):
     """Get Public Key.
 
     Encoding: base26 | base31 | base36 | base64 | base94
     """
     enc = encoders[encoding]
-    pk = read_bytes(private_key_file)
+    pk = read_bytes_formatted(private_key_file, enc)
     pk = PrivateKey(pk, enc)
     pub = pk.public_key.encode(enc)
     click.echo(decode_bytes(pub))
@@ -62,7 +63,7 @@ def pubkey_cmd(private_key_file: TextIO, encoding: str):
 @click.command()
 @click.argument("password_file", type=text_file)
 @click.argument("salt_file", type=text_file)
-@click.option("--encoding", default="base64", show_default=True)
+@click.option("--encoding", default="base36", show_default=True)
 @click.option("--profile", default="interactive", show_default=True)
 @click.option("--raw-salt", is_flag=True, help="Decode the salt as bytes")
 def kdf_cmd(
@@ -72,7 +73,7 @@ def kdf_cmd(
     profile: str,
     raw_salt: bool,
 ):
-    """Derive Private Key.
+    """Key Derivation Function.
 
     Encoding: base26 | base31 | base36 | base64 | base94
 
@@ -87,23 +88,23 @@ def kdf_cmd(
 
 
 @click.command()
-@click.argument("message_file", type=bin_file)
 @click.argument("private_key_file", type=text_file)
-@click.argument("public_key_file", type=text_file, required=False)
+@click.argument("public_key_file", type=text_file)
+@click.argument("message_file", type=bin_file)
 @click.option("--output-file", type=out_path, help="(Optional)")
-@click.option("--key-encoding", default="base64", show_default=True)
+@click.option("--key-encoding", default="base36", show_default=True)
 @click.option("--data-encoding", default="base36", show_default=True)
 @click.option("--compression", default="zlib", show_default=True)
 def encrypt_cmd(
-    message_file: BinaryIO,
     private_key_file: TextIO,
     public_key_file: TextIO,
+    message_file: BinaryIO,
     output_file: Path,
     key_encoding: str,
     data_encoding: str,
     compression: str,
 ):
-    """Encrypt message.
+    """Encrypt Message.
 
     Key encoding: base26 | base31 | base36 | base64 | base94
 
@@ -116,35 +117,64 @@ def encrypt_cmd(
     archiver = archivers[compression]
     data = data_stat = read_message(message_file, data_enc)
     data = archiver(data)
-    if public_key_file is None:
-        key = read_bytes(private_key_file)
-        encrypted = secret.encrypt(key, data, key_enc, data_enc)
-    else:
-        priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
-        encrypted = public.encrypt(priv, pub, data, data_enc)
-
+    priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
+    encrypted = public.encrypt(priv, pub, data, data_enc)
     write_output(output_file, encrypted, data_enc)
     print_stats(data_stat, encrypted)
 
 
 @click.command()
+@click.argument("key_file", type=text_file)
 @click.argument("message_file", type=bin_file)
-@click.argument("private_key_file", type=text_file)
-@click.argument("public_key_file", type=text_file, required=False)
 @click.option("--output-file", type=out_path, help="(Optional)")
-@click.option("--key-encoding", default="base64", show_default=True)
+@click.option("--key-encoding", default="base36", show_default=True)
 @click.option("--data-encoding", default="base36", show_default=True)
 @click.option("--compression", default="zlib", show_default=True)
-def decrypt_cmd(
+def encrypt_secret_cmd(
+    key_file: TextIO,
     message_file: BinaryIO,
-    private_key_file: TextIO,
-    public_key_file: TextIO,
     output_file: Path,
     key_encoding: str,
     data_encoding: str,
     compression: str,
 ):
-    """Decrypt message.
+    """Encrypt Message (symmetric).
+
+    Key encoding: base26 | base31 | base36 | base64 | base94
+
+    Data encoding: base26 | base31 | base36 | base64 | base94 | binary
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    key_enc = encoders[key_encoding]
+    data_enc = encoders[data_encoding]
+    archiver = archivers[compression]
+    data = data_stat = read_message(message_file, data_enc)
+    data = archiver(data)
+    key = read_bytes_formatted(key_file, key_enc)
+    encrypted = secret.encrypt(key, data, key_enc, data_enc)
+    write_output(output_file, encrypted, data_enc)
+    print_stats(data_stat, encrypted)
+
+
+@click.command()
+@click.argument("private_key_file", type=text_file)
+@click.argument("public_key_file", type=text_file)
+@click.argument("message_file", type=bin_file)
+@click.option("--output-file", type=out_path, help="(Optional)")
+@click.option("--key-encoding", default="base36", show_default=True)
+@click.option("--data-encoding", default="base36", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
+def decrypt_cmd(
+    private_key_file: TextIO,
+    public_key_file: TextIO,
+    message_file: BinaryIO,
+    output_file: Path,
+    key_encoding: str,
+    data_encoding: str,
+    compression: str,
+):
+    """Decrypt Message.
 
     Key encoding: base26 | base31 | base36 | base64 | base94
 
@@ -155,14 +185,43 @@ def decrypt_cmd(
     key_enc = encoders[key_encoding]
     data_enc = encoders[data_encoding]
     unarchiver = unarchivers[compression]
-    data = data_stat = read_ciphretext(message_file, data_enc)
-    if public_key_file is None:
-        key = read_bytes(private_key_file)
-        plain = secret.decrypt(key, data, key_enc, data_enc)
-    else:
-        priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
-        plain = public.decrypt(priv, pub, data, data_enc)
+    data = data_stat = read_ciphertext(message_file, data_enc)
+    priv, pub = init_keypair(private_key_file, public_key_file, key_enc)
+    plain = public.decrypt(priv, pub, data, data_enc)
+    plain = unarchiver(plain)
+    write_output(output_file, plain, data_enc)
+    print_stats(plain, data_stat)
 
+
+@click.command()
+@click.argument("key_file", type=text_file)
+@click.argument("message_file", type=bin_file)
+@click.option("--output-file", type=out_path, help="(Optional)")
+@click.option("--key-encoding", default="base36", show_default=True)
+@click.option("--data-encoding", default="base36", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
+def decrypt_secret_cmd(
+    key_file: TextIO,
+    message_file: BinaryIO,
+    output_file: Path,
+    key_encoding: str,
+    data_encoding: str,
+    compression: str,
+):
+    """Decrypt Message (symmetric).
+
+    Key encoding: base26 | base31 | base36 | base64 | base94
+
+    Data encoding: base26 | base31 | base36 | base64 | base94 | binary
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    key_enc = encoders[key_encoding]
+    data_enc = encoders[data_encoding]
+    unarchiver = unarchivers[compression]
+    data = data_stat = read_ciphertext(message_file, data_enc)
+    key = read_bytes_formatted(key_file, key_enc)
+    plain = secret.decrypt(key, data, key_enc, data_enc)
     plain = unarchiver(plain)
     write_output(output_file, plain, data_enc)
     print_stats(plain, data_stat)
@@ -176,7 +235,9 @@ def decrypt_cmd(
 def print_cmd(
     message_file: TextIO, output_format: str, column_height: int, no_header: bool
 ):
-    """Print table.
+    """Print Table.
+
+    This only works with Base26, Base31, and Base36.
 
     Output format: fixed | csv
     """
@@ -199,7 +260,9 @@ def find_error_cmd(
     column_height: int,
     no_header: bool,
 ):
-    """Find error.
+    """Find Error.
+
+    This only works with Base26, Base31, and Base36.
 
     Checksum: crc8 | crc16 | crc32
 
@@ -221,7 +284,9 @@ cli.add_command(genkey_cmd)
 cli.add_command(pubkey_cmd)
 cli.add_command(kdf_cmd)
 cli.add_command(encrypt_cmd)
+cli.add_command(encrypt_secret_cmd)
 cli.add_command(decrypt_cmd)
+cli.add_command(decrypt_secret_cmd)
 cli.add_command(print_cmd)
 cli.add_command(find_error_cmd)
 

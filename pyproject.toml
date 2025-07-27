@@ -1,6 +1,6 @@
 [project]
 name = "cw-soda"
-version = "0.4.2"
+version = "0.4.3"
 description = "A CLI tool for Unix-like environments to encrypt/decrypt a CW log using NaCl"
 readme = "README.md"
 authors = [

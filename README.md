@@ -31,31 +31,13 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 #### Docker
 
 ```
-% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.2
+% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.3
 ```
 
 
 ## Getting help
 
-All commands have `--help` option:
-
-```
-% soda --help
-Usage: soda [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  --version   Show the version and exit.
-  -h, --help  Show this message and exit.
-
-Commands:
-  decrypt     Decrypt message.
-  encrypt     Encrypt message.
-  find-error  Find error.
-  genkey      Generate Private Key.
-  kdf         Derive Private Key.
-  print       Print table.
-  pubkey      Get Public Key.
-```
+All commands have `[-h | --help]` option.
 
 
 ## Public Key encryption
@@ -67,7 +49,7 @@ Commands:
 % soda genkey | tee bob | soda pubkey - > bob_pub
 
 % cat alice
-fifRYlA+FMcNxb4bZO195MAiIi+JobLole5giV8C5uw=
+41YZNX5BF43P1AHY4E6NTMZYD535UWQ7ND16L0H4WQN2V9XK6E
 ```
 
 #### Encryption
@@ -81,7 +63,7 @@ text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
 (c) Wikipedia
 
-% soda encrypt message alice bob_pub > encrypted
+% soda encrypt alice bob_pub message > encrypted
 Plaintext length: 238
 Ciphertext length: 320
 Overhead: 1.345
@@ -109,11 +91,24 @@ Bob writes down the CW groups as he receives the message from Alice:
 
 ```
 % head -3 received 
-LL046
-3X97K
-62C3R
+ll046
+3x97k
+62c3r
 
-% soda decrypt received bob alice_pub  
+% soda print received
+#	A    	B    	C    	D    	E    	F    	G    	
+1	LL046	TCW2W	GAQ8H	VQKE7	GCE7T	RH9XF	I1LVG	
+2	3X97K	SRGQ7	HK31V	1E2O3	4W1DC	6BTW8	DUW9L	
+3	62C3R	JLAK3	5AWIR	BH03B	6UOIT	P6RK8	1UZHQ	
+4	NPC6S	YI3AE	59AAV	OW5E9	OFNCP	7ZF6U	A9OP2	
+5	0JKL4	JRCB5	I19SX	ZMDD9	2LKEF	XUSBJ	
+6	HNLCU	JGR0T	V1ZZX	MPR9N	2RORT	RW9KC	
+7	RI4TM	8BDAK	HJZEI	S04T1	7LXTN	STYJL	
+8	GU7D1	DY1J7	8VRJ5	JJP40	48F8O	39FZK	
+9	9LUDP	IJ8ZL	LG5UH	VB32L	6BTNG	NDVF9	
+10	N0PFA	5QZ30	9PPH6	AL67U	9VV3O	MPMNM	
+
+% soda decrypt bob alice_pub received 
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
 text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
@@ -130,12 +125,12 @@ Alice and Bob share a key for symmetric encryption:
 
 ```
 % soda genkey > shared
-% soda encrypt message shared > encrypted
+% soda encrypt-secret shared message > encrypted
 Plaintext length: 238
 Ciphertext length: 320
 Overhead: 1.345
 
-% soda decrypt encrypted shared
+% soda decrypt-secret shared encrypted
 A telegraph key is a specialized electrical switch used by a trained operator to transmit
 text messages in Morse code in a telegraphy system.
 The first telegraph key was invented by Alfred Vail, an associate of Samuel Morse.
@@ -156,14 +151,14 @@ The salt is hashed (Blake2) by default, which can be disabled by passing `--raw-
 % echo qwerty > password
 % echo 12345 > salt
 % soda kdf password salt
-CUs6rt6wYOVzrlmUCRaPaFuZUV1V+p2SeOeBCnlDat0=
+8C7DHO6XG2YYAC8YLLI7YBTKEWZE7IJJ0ZIM70MJ8F1SF0BTP
 
 % soda kdf password salt --profile sensitive
-mES3FHeCCN9M+Q4Vz70gw6aNajwZVfzZKwei9VmWOAU=
+3SMHEPX5RPTW7JWFJVF783EEC1FH9RXYBZN16W49UBN1WJNTHH
 
 % soda genkey > salt
 % soda kdf password salt --raw-salt
-+fKPunsez0zcKHzs259Gr2TrI/8PXBUX8wlYX8pE9/M=
+5NQ87O2FLSHR6YS6EMJHI1X9RH5CTV4GKEN4K4QNAX0MTDHV20
 ```
 
 
@@ -180,19 +175,19 @@ For a long text, the bz2 showed the best results. \
 Overall, encrypting a letter into 1.345 letters is a working solution.
 
 ```
-% soda encrypt message alice bob_pub --compression zlib > /dev/null
+% soda encrypt alice bob_pub message --compression zlib > /dev/null
 Plaintext length: 238
 Ciphertext length: 320
 Overhead: 1.345
-% soda encrypt message alice bob_pub --compression bz2 > /dev/null 
+% soda encrypt alice bob_pub message --compression bz2 > /dev/null 
 Plaintext length: 238
 Ciphertext length: 381
 Overhead: 1.601
-% soda encrypt message alice bob_pub --compression lzma > /dev/null
+% soda encrypt alice bob_pub message --compression lzma > /dev/null
 Plaintext length: 238
 Ciphertext length: 371
 Overhead: 1.559
-% soda encrypt message alice bob_pub --compression raw > /dev/null 
+% soda encrypt alice bob_pub message --compression raw > /dev/null 
 Plaintext length: 238
 Ciphertext length: 430
 Overhead: 1.807
@@ -249,7 +244,7 @@ The cw-soda supports various encodings:
 % soda genkey --encoding base26 | tee key26  
 DROFNIXGVGDTLEAVZDNGXVYRLYOAOSDFGXZMRVUJRCCLKOVYPVCNITT
 
-% soda encrypt message key26 --key-encoding base26 --data-encoding base26 > encrypted
+% soda encrypt-secret key26 message --key-encoding base26 --data-encoding base26 > encrypted
 Plaintext length: 238
 Ciphertext length: 353
 Overhead: 1.483
@@ -315,7 +310,7 @@ The keys are compatible with WireGuard, so you can use the KDF function for keyi
 ```
 % wg genkey | tee wg_key | wg pubkey
 kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
-% soda pubkey wg_key 
+% soda pubkey wg_key --encoding base64
 kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
 ```
 

@@ -4,7 +4,7 @@ FROM ubuntu:noble
 RUN yes | unminimize
 RUN apt-get update -y \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano mc rhash xxd \
+    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano rhash xxd \
     && rm -Rf /var/lib/apt/lists/* \
     && locale-gen "en_US.UTF-8"
 
