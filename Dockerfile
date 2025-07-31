@@ -4,7 +4,7 @@ FROM ubuntu:noble
 RUN yes | unminimize
 RUN apt-get update -y \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano xxd exiftool \
+    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano xxd exiftool keepassxc \
     && rm -Rf /var/lib/apt/lists/* \
     && locale-gen "en_US.UTF-8"
 
