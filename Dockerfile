@@ -4,7 +4,7 @@ FROM ubuntu:noble
 RUN yes | unminimize
 RUN apt-get update -y \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano rhash xxd \
+    && apt-get install -y --no-install-recommends ca-certificates locales curl less vim nano xxd exiftool \
     && rm -Rf /var/lib/apt/lists/* \
     && locale-gen "en_US.UTF-8"
 
@@ -18,4 +18,5 @@ ENV PATH="/home/ubuntu/.local/bin/:$PATH"
 
 ADD --chown=ubuntu:ubuntu . cw-soda
 RUN uv tool install --no-cache --directory cw-soda . \
-    && rm -Rf cw-soda
+    && rm -Rf cw-soda \
+    && uv tool install "steganon[cli]"
