@@ -31,7 +31,7 @@ I wanted to re-implement the encryption machine, update it for the 21st century,
 #### Docker
 
 ```
-% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.3
+% docker run -it --rm -h cw-soda -v .:/home/ubuntu/host nett/cw-soda:v0.4.4
 ```
 
 
@@ -312,6 +312,22 @@ The keys are compatible with WireGuard, so you can use the KDF function for keyi
 kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
 % soda pubkey wg_key --encoding base64
 kszDHQ9ZZJuwSZ8OSz99Hx7WNIFaTvmnvUlE+OALmDo=
+```
+
+
+#### Secret notes
+
+```
+% echo seed1 > seed1
+% echo seed2 > seed2
+% echo password1 > password1
+% echo password2 > password2
+% echo salt1 > salt1
+% echo salt2 > salt2
+% echo note1 > note1
+% echo note2 > note2
+% soda hide-secret img.png modified.png seed1 password1 salt1 note1 seed2 password2 salt2 note2
+% soda reveal-secret modified.png seed1 password1 salt1 note1 seed2 password2 salt2 note2
 ```
 
 

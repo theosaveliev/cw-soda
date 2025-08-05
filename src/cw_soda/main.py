@@ -3,17 +3,19 @@ from typing import BinaryIO, TextIO
 
 import click
 from nacl.public import PrivateKey
+from steganon import LSB_MWS, Image
 
 from cw_soda.archivers import archivers, unarchivers
 from cw_soda.cryptography import public, secret
-from cw_soda.cryptography.kdf import kdf, kdf_profiles
-from cw_soda.encoders import decode_bytes, encoders
+from cw_soda.cryptography.kdf import hash_salt, kdf, kdf_profiles
+from cw_soda.encoders import RawEncoder, decode_bytes, encoders
 from cw_soda.error_search import checksum_calculators, error_search
 from cw_soda.format_table import format_table
 from cw_soda.io_utils import (
     get_salt,
     init_keypair,
     print_stats,
+    read_arg_groups,
     read_bytes,
     read_bytes_formatted,
     read_ciphertext,
@@ -24,6 +26,7 @@ from cw_soda.io_utils import (
 
 text_file = click.File(mode="r", encoding="utf-8", errors="strict")
 bin_file = click.File(mode="rb")
+in_path = click.Path(dir_okay=False, readable=True, path_type=Path)
 out_path = click.Path(dir_okay=False, writable=True, path_type=Path)
 
 
@@ -280,6 +283,105 @@ def find_error_cmd(
         click.echo(table)
 
 
+@click.command()
+@click.argument("input_image", type=in_path)
+@click.argument("output_image", type=out_path)
+@click.argument("files", type=in_path, nargs=-1)
+@click.option("--profile", default="interactive", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
+def hide_secret_cmd(
+    input_image: Path,
+    output_image: Path,
+    files: tuple[Path],
+    profile: str,
+    compression: str,
+):
+    """Hide Data (symmetric).
+
+    Files: seed password salt plaintext [seed password salt plaintext]...
+
+    Profile: interactive | moderate | sensitive
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    profile = kdf_profiles[profile]
+    archiver = archivers[compression]
+
+    args = read_arg_groups(files, 4)
+    seeds = [read_bytes(group[0]) for group in args]
+    passwords = [read_bytes(group[1]) for group in args]
+    hashes = [hash_salt(read_bytes(group[2])) for group in args]
+    keys = [kdf(pw, salt, profile, RawEncoder) for pw, salt in zip(passwords, hashes)]
+    encrypted = []
+    for key, group in zip(keys, args):
+        data = archiver(group[3].read_bytes())
+        data = secret.encrypt(key, data, RawEncoder, RawEncoder)
+        encrypted.append(data)
+
+    image = Image.open(input_image)
+    lsb_mws = LSB_MWS(image, seeds)
+    groups = len(args)
+    for i in range(groups):
+        lsb_mws.hide(encrypted[i])
+        if i < groups - 1:
+            lsb_mws.next()
+
+    lsb_mws.finalize()
+    if output_image.exists():
+        click.confirm(
+            f"Overwrite the output file? ({output_image})", default=False, abort=True
+        )
+
+    image.save(output_image)
+
+
+@click.command()
+@click.argument("input_image", type=in_path)
+@click.argument("files", type=in_path, nargs=-1)
+@click.option("--profile", default="interactive", show_default=True)
+@click.option("--compression", default="zlib", show_default=True)
+def reveal_secret_cmd(
+    input_image: Path,
+    files: tuple[Path],
+    profile: str,
+    compression: str,
+):
+    """Reveal Data (symmetric).
+
+    Files: seed password salt output [seed password salt output]...
+
+    Profile: interactive | moderate | sensitive
+
+    Compression: zlib | bz2 | lzma | raw
+    """
+    profile = kdf_profiles[profile]
+    unarchiver = unarchivers[compression]
+
+    args = read_arg_groups(files, 4)
+    seeds = [read_bytes(group[0]) for group in args]
+    passwords = [read_bytes(group[1]) for group in args]
+    hashes = [hash_salt(read_bytes(group[2])) for group in args]
+    keys = [kdf(pw, salt, profile, RawEncoder) for pw, salt in zip(passwords, hashes)]
+    outputs = [group[3] for group in args]
+
+    image = Image.open(input_image)
+    lsb_mws = LSB_MWS(image, seeds)
+    groups = len(args)
+    for i in range(groups):
+        encrypted = lsb_mws.extract()
+        if i < groups - 1:
+            lsb_mws.next()
+
+        data = secret.decrypt(keys[i], encrypted, RawEncoder, RawEncoder)
+        data = unarchiver(data)
+        if outputs[i].exists():
+            click.confirm(
+                f"Overwrite the output file? ({outputs[i]})", default=False, abort=True
+            )
+
+        outputs[i].write_bytes(data)
+
+
 cli.add_command(genkey_cmd)
 cli.add_command(pubkey_cmd)
 cli.add_command(kdf_cmd)
@@ -289,6 +391,8 @@ cli.add_command(decrypt_cmd)
 cli.add_command(decrypt_secret_cmd)
 cli.add_command(print_cmd)
 cli.add_command(find_error_cmd)
+cli.add_command(hide_secret_cmd)
+cli.add_command(reveal_secret_cmd)
 
 if __name__ == "__main__":
     cli()

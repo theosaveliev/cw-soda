@@ -1,4 +1,5 @@
 import re
+from io import TextIOBase
 from pathlib import Path
 from typing import BinaryIO, TextIO
 
@@ -30,15 +31,22 @@ __all__ = [
     "get_salt",
     "print_stats",
     "write_output",
+    "read_arg_groups",
 ]
 
 
-def read_str(buff: TextIO) -> str:
-    return buff.read().strip()
+def read_str(source: TextIO | Path) -> str:
+    if isinstance(source, TextIOBase):
+        return source.read().strip()
+
+    if isinstance(source, Path):
+        return source.read_text(encoding="utf-8", errors="strict").strip()
+
+    raise NotImplementedError("Unsupported input")
 
 
-def read_bytes(buff: TextIO) -> bytes:
-    return encode_str(read_str(buff))
+def read_bytes(source: TextIO | Path) -> bytes:
+    return encode_str(read_str(source))
 
 
 def remove_whitespace(data: str) -> str:
@@ -56,8 +64,8 @@ def format_input(data: str, in_enc: Encoder) -> str:
     return data
 
 
-def read_bytes_formatted(buff: TextIO, in_enc: Encoder) -> bytes:
-    data = read_str(buff)
+def read_bytes_formatted(source: TextIO, in_enc: Encoder) -> bytes:
+    data = read_str(source)
     data = format_input(data, in_enc)
     return encode_str(data)
 
@@ -67,9 +75,9 @@ def break_into_groups(data: str) -> list:
     return [data[i : i + 5] for i in range(0, len(data), 5)]
 
 
-def read_groups(buff: TextIO) -> list:
+def read_groups(source: TextIO) -> list:
     """Reads the input as 5-letter groups."""
-    text = read_str(buff)
+    text = read_str(source)
     text = format_cw_input(text)
     return break_into_groups(text)
 
@@ -102,7 +110,9 @@ def print_stats(plain, cipher):
 def write_output(output_file: Path | None, data: bytes, out_enc: Encoder):
     if output_file is not None:
         if output_file.exists():
-            click.confirm("Overwrite the output file?", default=False, abort=True)
+            click.confirm(
+                f"Overwrite the output file? ({output_file})", default=False, abort=True
+            )
 
         output_file.write_bytes(data)
     elif out_enc == RawEncoder:
@@ -128,3 +138,15 @@ def read_ciphertext(message_file: BinaryIO, in_enc: Encoder):
 
     data = format_input(decode_bytes(data), in_enc)
     return encode_str(data)
+
+
+def read_arg_groups(args: tuple[Path], group_size: int):
+    arg_groups, unmatched = divmod(len(args), group_size)
+    if arg_groups == 0 or unmatched > 0:
+        raise click.BadArgumentUsage("Incorrect number of arguments")
+
+    result = []
+    for i in range(arg_groups):
+        result.append(args[i * group_size : i * group_size + group_size])
+
+    return result

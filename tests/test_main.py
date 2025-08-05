@@ -47,6 +47,12 @@ def encrypted_secret():
     return "54N2ZP3PH56LVV2K2GLW6AK7PALBZ1VDHP7DXPRHM061WVA1K8HOAY3T4ELX6L671L0KOM2"
 
 
+@pytest.fixture
+def png_image(shared_datadir):
+    """A PNG image."""
+    return (shared_datadir / "img.png").read_bytes()
+
+
 def test_genkey():
     runner = CliRunner()
     text_encoders = ["base26", "base31", "base36", "base64", "base94"]
@@ -254,3 +260,79 @@ def test_encrypt_secret(private_key, password):
         result = runner.invoke(cli, args=args)
         assert result.exit_code == 0
         assert result.stdout == password + "\n"
+
+
+def test_hide_reveal_secret(png_image):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("image.png", "wb") as fd:
+            fd.write(png_image)
+
+        with open("seed1", "w", encoding="utf-8") as fd:
+            fd.write("111")
+
+        with open("seed2", "w", encoding="utf-8") as fd:
+            fd.write("222")
+
+        with open("password1", "w", encoding="utf-8") as fd:
+            fd.write("qwe1")
+
+        with open("password2", "w", encoding="utf-8") as fd:
+            fd.write("qwe2")
+
+        with open("salt1", "w", encoding="utf-8") as fd:
+            fd.write("123")
+
+        with open("salt2", "w", encoding="utf-8") as fd:
+            fd.write("321")
+
+        with open("message1", "w", encoding="utf-8") as fd:
+            fd.write("message1")
+
+        with open("message2", "wb") as fd:
+            fd.write(b" message2 ")
+
+        args = [
+            "hide-secret",
+            "image.png",
+            "modified.png",
+            "seed1",
+            "password1",
+            "salt1",
+            "message1",
+            "seed2",
+            "password2",
+            "salt2",
+            "message2",
+            "--profile",
+            "interactive",
+            "--compression",
+            "zlib",
+        ]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+
+        args = [
+            "reveal-secret",
+            "modified.png",
+            "seed1",
+            "password1",
+            "salt1",
+            "output1",
+            "seed2",
+            "password2",
+            "salt2",
+            "output2",
+            "--profile",
+            "interactive",
+            "--compression",
+            "zlib",
+        ]
+        result = runner.invoke(cli, args=args)
+        assert result.exit_code == 0
+
+        with open("output1", "r", encoding="utf-8") as fd:
+            assert fd.read() == "message1"
+
+        with open("output2", "rb") as fd:
+            assert fd.read() == b" message2 "
